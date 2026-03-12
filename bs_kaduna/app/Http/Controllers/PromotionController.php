@@ -42,7 +42,7 @@ class PromotionController extends Controller
         $this->schoolClassRepository = $schoolClassRepository;
         $this->schoolSectionRepository = $schoolSectionRepository;
         $this->promotionRepository = $promotionRepository;
-        $this.promotionService = $promotionService;
+        $this->promotionService = $promotionService;
     }
 
     /**
@@ -154,6 +154,11 @@ class PromotionController extends Controller
         if (!Auth::user()->hasAnyRole(['Admin', 'Teacher', 'Super Admin']))
             abort(403, 'Unauthorized to finalize batches.');
 
+        $request->validate([
+            'class_id' => 'required|integer|exists:school_classes,id',
+            'section_id' => 'required|integer|exists:sections,id',
+        ]);
+
         $session_id = $this->getSchoolCurrentSession();
         $class_id = $request->class_id;
         $section_id = $request->section_id;
@@ -165,13 +170,14 @@ class PromotionController extends Controller
             ->get();
 
         foreach ($reviews as $review) {
-            // 1. Mark finalized
-            $review->update(['is_finalized' => true]);
-
-            // 2. Mirror into 'promotions' table logic if needed
+            $review->update([
+                'is_finalized' => true,
+                'reviewer_id' => $review->reviewer_id ?: Auth::id(),
+                'reviewed_at' => $review->reviewed_at ?: now(),
+            ]);
         }
 
-        return back()->with('status', 'Batch finalized and locked successfully.');
+        return back()->with('status', 'Promotion decisions finalized successfully. Use manual promotion to place students into the destination session.');
     }
 
     /**
@@ -211,15 +217,21 @@ class PromotionController extends Controller
         $previousSessionSections = $this->promotionRepository->getSections($previousSession['id'], $class_id);
 
         $current_school_session_id = $this->getSchoolCurrentSession();
-        $currentSessionSections = $this->promotionRepository->getSectionsBySession($current_school_session_id);
-
-        $currentSessionSectionsCounts = $currentSessionSections->count();
+        $sectionPromotionStatus = [];
+        foreach ($previousSessionSections as $previousSessionSection) {
+            $sectionPromotionStatus[$previousSessionSection->section_id] = $this->promotionRepository->isSectionPromotedToSession(
+                (int) $previousSession['id'],
+                (int) $current_school_session_id,
+                (int) $class_id,
+                (int) $previousSessionSection->section_id
+            );
+        }
 
         $data = [
             'previousSessionClasses' => $previousSessionClasses,
             'class_id' => $class_id,
             'previousSessionSections' => $previousSessionSections,
-            'currentSessionSectionsCounts' => $currentSessionSectionsCounts,
+            'sectionPromotionStatus' => $sectionPromotionStatus,
             'previousSessionId' => $previousSession['id'],
         ];
 
@@ -252,12 +264,18 @@ class PromotionController extends Controller
             $latest_school_session = $this->schoolSessionRepository->getLatestSession();
 
             $school_classes = $this->schoolClassRepository->getAllBySession($latest_school_session->id);
+            $reviews = \App\Models\PromotionReview::where('session_id', $session_id)
+                ->where('class_id', $class_id)
+                ->where('section_id', $section_id)
+                ->get()
+                ->keyBy('student_id');
 
             $data = [
                 'students' => $students,
                 'schoolClass' => $schoolClass,
                 'section' => $section,
                 'school_classes' => $school_classes,
+                'reviews' => $reviews,
             ];
 
             return view('promotions.promote', $data);
@@ -274,17 +292,47 @@ class PromotionController extends Controller
      */
     public function store(Request $request)
     {
-        $id_card_numbers = $request->id_card_number;
         $latest_school_session = $this->schoolSessionRepository->getLatestSession();
+        $request->validate([
+            'id_card_number' => 'required|array',
+            'class_id' => 'required|array',
+            'section_id' => 'required|array',
+        ]);
+
+        $id_card_numbers = $request->id_card_number;
+        $classIds = array_values($request->class_id);
+        $sectionIds = array_values($request->section_id);
+
+        if (count($id_card_numbers) !== count($classIds) || count($id_card_numbers) !== count($sectionIds)) {
+            return back()->withError('Promotion form data is inconsistent. Please reload and try again.');
+        }
 
         $rows = [];
         $i = 0;
         foreach ($id_card_numbers as $student_id => $id_card_number) {
+            $targetClassId = (int) ($classIds[$i] ?? 0);
+            $targetSectionId = (int) ($sectionIds[$i] ?? 0);
+
+            $targetClass = \App\Models\SchoolClass::where('id', $targetClassId)
+                ->where('session_id', $latest_school_session->id)
+                ->first();
+            if (!$targetClass) {
+                return back()->withError('One or more target classes do not belong to the destination session.');
+            }
+
+            $targetSection = \App\Models\Section::where('id', $targetSectionId)
+                ->where('class_id', $targetClassId)
+                ->where('session_id', $latest_school_session->id)
+                ->first();
+            if (!$targetSection) {
+                return back()->withError('One or more target sections do not belong to the selected destination class.');
+            }
+
             $row = [
                 'student_id' => $student_id,
                 'id_card_number' => $id_card_number,
-                'class_id' => $request->class_id[$i],
-                'section_id' => $request->section_id[$i],
+                'class_id' => $targetClassId,
+                'section_id' => $targetSectionId,
                 'session_id' => $latest_school_session->id,
             ];
             array_push($rows, $row);

@@ -89,4 +89,61 @@ class ReportCommentController extends Controller
 
         return back()->with('status', ucfirst($request->type) . ' comment saved successfully.');
     }
+
+    public function storeAffectiveScores(Request $request)
+    {
+        $request->validate([
+            'student_id' => 'required|exists:users,id',
+            'semester_id' => 'required|exists:semesters,id',
+            'scores' => 'required|array',
+            'scores.punctuality' => 'required|integer|min:1|max:5',
+            'scores.neatness' => 'required|integer|min:1|max:5',
+            'scores.politeness' => 'required|integer|min:1|max:5',
+            'scores.honesty' => 'required|integer|min:1|max:5',
+            'scores.performance' => 'required|integer|min:1|max:5',
+            'scores.attentiveness' => 'required|integer|min:1|max:5',
+            'scores.perseverance' => 'required|integer|min:1|max:5',
+            'scores.speaking' => 'required|integer|min:1|max:5',
+            'scores.writing' => 'required|integer|min:1|max:5',
+        ]);
+
+        $user = Auth::user();
+        if (!$user->hasRole('Teacher')) {
+            abort(403);
+        }
+
+        $current_session_id = $this->getSchoolCurrentSession();
+        $promotion = \App\Models\Promotion::where('student_id', $request->student_id)
+            ->where('session_id', $current_session_id)
+            ->first();
+
+        if (!$promotion) {
+            return back()->withError('Student is not promoted to any class for this session.');
+        }
+
+        $isClassTeacher = AssignedTeacher::query()
+            ->where('teacher_id', $user->id)
+            ->where('session_id', $current_session_id)
+            ->where('class_id', $promotion->class_id)
+            ->where('section_id', $promotion->section_id)
+            ->sectionLeadership()
+            ->exists();
+
+        if (!$isClassTeacher) {
+            abort(403, 'Only the section teacher or class supervisor can score affective areas.');
+        }
+
+        $reportComment = StudentReportComment::firstOrNew([
+            'student_id' => $request->student_id,
+            'semester_id' => $request->semester_id,
+            'session_id' => $current_session_id,
+        ]);
+
+        $reportComment->class_id = $promotion->class_id;
+        $reportComment->section_id = $promotion->section_id;
+        $reportComment->affective_scores = $request->scores;
+        $reportComment->save();
+
+        return back()->with('status', 'Affective area scores saved successfully.');
+    }
 }

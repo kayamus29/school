@@ -1,42 +1,50 @@
 @extends('layouts.app')
 
 @section('content')
-    <link rel="stylesheet" href="{{ asset('css/results-dashboard.css') }}">
+    @include('results.partials.report-theme')
 
-    <div class="container">
+    @php
+        $affectiveLabels = [
+            'punctuality' => 'Punctuality',
+            'neatness' => 'Neatness',
+            'politeness' => 'Politeness',
+            'honesty' => 'Honesty',
+            'performance' => 'Performance',
+            'attentiveness' => 'Attentiveness',
+            'perseverance' => 'Perseverance',
+            'speaking' => 'Speaking',
+            'writing' => 'Writing',
+        ];
+
+        $gradeBadge = function ($score) {
+            if ($score >= 80) return ['A', 'report-grade-a', 'Outstanding', 'var(--report-green)'];
+            if ($score >= 70) return ['B', 'report-grade-b', 'Very Good', '#2a5abc'];
+            if ($score >= 60) return ['C', 'report-grade-c', 'Good', '#9b6b00'];
+            if ($score >= 50) return ['D', 'report-grade-d', 'Average', 'var(--report-amber)'];
+            return ['F', 'report-grade-f', 'Below Pass', 'var(--report-red)'];
+        };
+    @endphp
+
+    <div class="container report-view">
         <div class="row justify-content-start">
             @include('layouts.left-menu')
 
             <div class="col-xs-12 col-sm-12 col-md-9 col-lg-10">
                 <div class="row pt-3">
                     <div class="col ps-4">
-                        <!-- Header -->
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h1 class="h3 mb-0 fw-bold text-dark">
-                                <i class="bi bi-person-badge-fill text-primary me-2"></i>Section Performance Audit
-                            </h1>
-                        </div>
-
                         <div class="row g-4">
-                            <!-- Selectors Sidebar -->
                             <div class="col-lg-4 no-print">
-                                <!-- Section Selector -->
                                 <div class="card border-0 shadow-sm mb-4">
                                     <div class="card-header bg-white border-bottom py-3">
-                                        <h6 class="mb-0 fw-semibold text-dark">
-                                            <i class="bi bi-1-circle text-primary me-2"></i>Select Section
-                                        </h6>
+                                        <h6 class="mb-0 fw-semibold text-dark">Select Section</h6>
                                     </div>
                                     <div class="card-body">
-                                        <form action="{{ route('results.section') }}" method="GET" id="sectionForm">
-                                            <select name="section_id"
-                                                class="form-select form-select-lg border-light bg-light"
-                                                onchange="this.form.submit()">
+                                        <form action="{{ route('results.section') }}" method="GET">
+                                            <select name="section_id" class="form-select form-select-lg border-light bg-light" onchange="this.form.submit()">
                                                 <option value="">-- Choose Section --</option>
                                                 @foreach($sections as $s)
                                                     <option value="{{ $s->section_id }}" {{ $section_id == $s->section_id ? 'selected' : '' }}>
-                                                        {{ $s->schoolClass->class_name ?? '??' }}
-                                                        ({{ $s->section->section_name ?? '??' }})
+                                                        {{ $s->schoolClass->class_name ?? '??' }} ({{ $s->section->section_name ?? '??' }})
                                                     </option>
                                                 @endforeach
                                             </select>
@@ -44,36 +52,19 @@
                                     </div>
                                 </div>
 
-                                <!-- Student List -->
                                 @if($section_id && count($students) > 0)
                                     <div class="card border-0 shadow-sm">
-                                        <div class="card-header bg-white border-bottom py-3">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <h6 class="mb-0 fw-semibold text-dark">
-                                                    <i class="bi bi-2-circle text-primary me-2"></i>Select Student
-                                                </h6>
-                                                <span class="badge bg-primary rounded-pill">{{ count($students) }}</span>
-                                            </div>
+                                        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0 fw-semibold text-dark">Select Student</h6>
+                                            <span class="badge bg-primary rounded-pill">{{ count($students) }}</span>
                                         </div>
-                                        <div class="card-body p-0" style="max-height: 500px; overflow-y: auto;">
+                                        <div class="card-body p-0" style="max-height: 560px; overflow-y: auto;">
                                             <div class="list-group list-group-flush">
                                                 @foreach($students as $s)
                                                     <a href="{{ route('results.section', ['section_id' => $section_id, 'student_id' => $s->id]) }}"
                                                         class="list-group-item list-group-item-action border-0 py-3 {{ $student_id == $s->id ? 'active' : '' }}">
-                                                        <div class="d-flex align-items-center">
-                                                            <div
-                                                                class="bg-{{ $student_id == $s->id ? 'white' : 'primary' }} bg-opacity-10 p-2 rounded me-3">
-                                                                <i
-                                                                    class="bi bi-person-fill {{ $student_id == $s->id ? 'text-primary' : 'text-primary' }}"></i>
-                                                            </div>
-                                                            <div class="flex-grow-1">
-                                                                <div class="fw-semibold">{{ $s->first_name }} {{ $s->last_name }}
-                                                                </div>
-                                                                <small
-                                                                    class="{{ $student_id == $s->id ? 'text-white-50' : 'text-muted' }}">ID:
-                                                                    {{ $s->id }}</small>
-                                                            </div>
-                                                        </div>
+                                                        <div class="fw-semibold">{{ $s->first_name }} {{ $s->last_name }}</div>
+                                                        <small class="{{ $student_id == $s->id ? 'text-white-50' : 'text-muted' }}">ID: {{ $s->id }}</small>
                                                     </a>
                                                 @endforeach
                                             </div>
@@ -81,224 +72,328 @@
                                     </div>
                                 @elseif($section_id)
                                     <div class="alert alert-info border-0 shadow-sm">
-                                        <i class="bi bi-info-circle me-2"></i>No students found in this section.
+                                        No students found in this section.
                                     </div>
                                 @endif
                             </div>
 
-                            <!-- Results Display -->
                             <div class="col-lg-8">
                                 @if($selectedStudent)
-                                    <!-- Student Info Card -->
-                                    <div class="card border-0 shadow-sm mb-4">
-                                        <div class="card-body">
-                                            <div class="d-flex align-items-center justify-content-between">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="bg-primary bg-opacity-10 p-3 rounded me-3">
-                                                        <i class="bi bi-person-circle text-primary fs-3"></i>
-                                                    </div>
-                                                    <div>
-                                                        <h5 class="mb-0 fw-bold">{{ $selectedStudent->first_name }}
-                                                            {{ $selectedStudent->last_name }}</h5>
-                                                        <p class="text-muted small mb-0">Student ID: {{ $selectedStudent->id }}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <button onclick="window.print()"
-                                                    class="btn btn-outline-primary shadow-sm no-print px-4">
-                                                    <i class="bi bi-printer me-2"></i>Print
-                                                </button>
-                                            </div>
-                                        </div>
+                                    @php
+                                        $studentInitials = strtoupper(substr($selectedStudent->first_name ?? 'S', 0, 1) . substr($selectedStudent->last_name ?? 'R', 0, 1));
+                                        $schoolLogo = !empty($site_setting->school_logo_path) ? asset('storage/' . $site_setting->school_logo_path) : null;
+                                        $schoolName = $site_setting->school_name ?? config('app.name');
+                                        $sessionName = optional(optional($selectedPromotion)->session)->session_name ?? 'Current Session';
+                                        $className = optional(optional($selectedPromotion)->schoolClass)->class_name ?? 'Not Assigned';
+                                        $sectionName = optional(optional($selectedPromotion)->section)->section_name ?? null;
+                                        $gender = ucfirst($selectedStudent->gender ?? 'N/A');
+                                        $birthday = !empty($selectedStudent->birthday) ? \Carbon\Carbon::parse($selectedStudent->birthday)->format('d M Y') : 'N/A';
+
+                                        $flatScores = collect($results ?? [])->flatMap(function ($courseResults) {
+                                            return collect($courseResults)->pluck('final_marks');
+                                        })->filter(fn($score) => $score !== null);
+
+                                        $overallAverage = $flatScores->count() ? round($flatScores->avg(), 1) : 0;
+                                        $passCount = $flatScores->filter(fn($score) => $score >= 50)->count();
+                                        $failCount = $flatScores->filter(fn($score) => $score < 50)->count();
+                                    @endphp
+
+                                    <div class="report-toolbar report-hidden-print">
+                                        <button onclick="window.print()" class="btn btn-outline-primary shadow-sm px-4">
+                                            <i class="bi bi-printer me-2"></i>Print Report
+                                        </button>
                                     </div>
 
-                                    <!-- Performance Summary -->
-                                    <div class="row g-3 mb-4">
-                                        @php
-                                            $totalMarks = 0;
-                                            $totalCount = 0;
-                                            $passCount = 0;
-                                            $failCount = 0;
+                                    <div class="report-page">
+                                        <div class="report-header">
+                                            <div class="report-logo-wrap">
+                                                @if($schoolLogo)
+                                                    <img src="{{ $schoolLogo }}" alt="{{ $schoolName }}">
+                                                @else
+                                                    {{ strtoupper(substr($schoolName, 0, 3)) }}
+                                                @endif
+                                            </div>
+                                            <div class="report-school-info">
+                                                <div class="report-school-name">{{ $schoolName }}</div>
+                                                <div class="report-school-tagline">Section Report Management</div>
+                                                <div class="report-school-contact">
+                                                    Teacher-facing report sheet for review, comments, and attendance updates.
+                                                </div>
+                                            </div>
+                                            <div class="report-badge-box">
+                                                <span class="report-badge-label">Teacher View</span>
+                                                <span class="report-badge-term">Session Overview</span>
+                                                <span class="report-badge-session">{{ $sessionName }}</span>
+                                            </div>
+                                        </div>
 
-                                            foreach ($results as $courseResults) {
-                                                foreach ($courseResults as $mark) {
-                                                    $totalMarks += $mark->final_marks;
-                                                    $totalCount++;
-                                                    if ($mark->final_marks >= 50) {
-                                                        $passCount++;
-                                                    } else {
-                                                        $failCount++;
-                                                    }
-                                                }
-                                            }
-                                            $studentAvg = $totalCount > 0 ? ($totalMarks / $totalCount) : 0;
-                                        @endphp
+                                        <div class="report-gold-rule"></div>
 
-                                        <div class="col-md-4">
-                                            <div class="card border-0 shadow-sm h-100">
-                                                <div class="card-body">
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            <p class="text-muted text-uppercase small mb-1">Average Score</p>
-                                                            <h3
-                                                                class="mb-0 fw-bold {{ $studentAvg >= 70 ? 'text-success' : ($studentAvg >= 50 ? 'text-warning' : 'text-danger') }}">
-                                                                {{ number_format($studentAvg, 1) }}%
-                                                            </h3>
-                                                        </div>
-                                                        <div class="bg-primary bg-opacity-10 p-3 rounded">
-                                                            <i class="bi bi-trophy-fill text-primary fs-4"></i>
-                                                        </div>
-                                                    </div>
+                                        <div class="report-student-banner">
+                                            <div class="report-avatar">
+                                                @if(!empty($selectedStudent->photo))
+                                                    <img src="{{ asset('storage/' . $selectedStudent->photo) }}" alt="{{ $selectedStudent->first_name }}">
+                                                @else
+                                                    {{ $studentInitials }}
+                                                @endif
+                                            </div>
+                                            <div class="report-student-details">
+                                                <div class="report-student-name">{{ $selectedStudent->first_name }} {{ $selectedStudent->last_name }}</div>
+                                                <div class="report-student-meta">
+                                                    <span>Student ID: <strong>{{ optional($selectedPromotion)->id_card_number ?? $selectedStudent->id }}</strong></span>
+                                                    <span>Class: <strong>{{ $className }}{{ $sectionName ? ' (' . $sectionName . ')' : '' }}</strong></span>
+                                                    <span>Gender: <strong>{{ $gender }}</strong></span>
+                                                    <span>Date of Birth: <strong>{{ $birthday }}</strong></span>
+                                                </div>
+                                            </div>
+                                            <div class="report-summary-pills">
+                                                <div class="report-pill avg">
+                                                    <span class="report-pill-value">{{ number_format($overallAverage, 1) }}%</span>
+                                                    <span class="report-pill-label">Average</span>
+                                                </div>
+                                                <div class="report-pill pass">
+                                                    <span class="report-pill-value">{{ $passCount }}</span>
+                                                    <span class="report-pill-label">Passed</span>
+                                                </div>
+                                                <div class="report-pill fail">
+                                                    <span class="report-pill-value">{{ $failCount }}</span>
+                                                    <span class="report-pill-label">Failed</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div class="col-md-4">
-                                            <div class="card border-0 shadow-sm h-100">
-                                                <div class="card-body">
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            <p class="text-muted text-uppercase small mb-1">Courses Passed</p>
-                                                            <h3 class="mb-0 fw-bold text-success">{{ $passCount }}</h3>
-                                                        </div>
-                                                        <div class="bg-success bg-opacity-10 p-3 rounded">
-                                                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-4">
-                                            <div class="card border-0 shadow-sm h-100">
-                                                <div class="card-body">
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            <p class="text-muted text-uppercase small mb-1">Courses Failed</p>
-                                                            <h3 class="mb-0 fw-bold text-danger">{{ $failCount }}</h3>
-                                                        </div>
-                                                        <div class="bg-danger bg-opacity-10 p-3 rounded">
-                                                            <i class="bi bi-x-circle-fill text-danger fs-4"></i>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Results Table -->
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header bg-white border-bottom py-3">
-                                            <h5 class="mb-0 fw-bold text-dark">
-                                                <i class="bi bi-table me-2 text-primary"></i>Consolidated Results
-                                            </h5>
-                                        </div>
-                                        <div class="card-body p-0">
-                                            <div class="table-responsive">
-                                                <table class="table table-hover align-middle mb-0">
-                                                    <thead class="bg-light">
-                                                        <tr>
-                                                            <th class="ps-4 py-3 fw-semibold">Course</th>
-                                                            @foreach($semesters as $semester)
-                                                                <th class="text-center py-3 fw-semibold">
-                                                                    {{ $semester->semester_name }}</th>
-                                                            @endforeach
-                                                            <th class="text-center py-3 fw-semibold bg-light">Annual Total</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        @foreach($courses as $course)
-                                                            <tr class="border-bottom">
-                                                                <td class="ps-4 py-3">
-                                                                    <div class="fw-semibold text-dark">{{ $course->course_name }}
-                                                                    </div>
-                                                                    <div class="text-muted small">{{ $course->course_type }}</div>
-                                                                </td>
-                                                                @php $annual = 0;
-                                                                $count = 0; @endphp
+                                        <div class="report-body">
+                                            <div class="report-section-title">Academic Performance</div>
+                                            <div class="report-table-wrap mb-4">
+                                                <div class="table-responsive">
+                                                    <table class="report-table">
+                                                        <thead>
+                                                            <tr>
+                                                                <th style="width: 28%;">Subject</th>
                                                                 @foreach($semesters as $semester)
-                                                                    @php
-                                                                        $mark = isset($results[$course->id]) ? $results[$course->id]->where('semester_id', $semester->id)->first() : null;
-                                                                        if ($mark) {
-                                                                            $annual += $mark->final_marks;
-                                                                            $count++;
-                                                                        }
-                                                                    @endphp
-                                                                    <td class="text-center py-3">
-                                                                        @if($mark)
-                                                                            @php
-                                                                                $colorClass = $mark->final_marks >= 80 ? 'success' : ($mark->final_marks >= 60 ? 'primary' : ($mark->final_marks >= 50 ? 'warning' : 'danger'));
-                                                                            @endphp
-                                                                            <span
-                                                                                class="badge bg-{{ $colorClass }} bg-opacity-10 text-{{ $colorClass }} px-3 py-2 fw-semibold clickable-mark"
-                                                                                style="cursor: pointer; font-size: 0.95rem;"
-                                                                                data-student-id="{{ $selectedStudent->id }}"
-                                                                                data-course-id="{{ $course->id }}"
-                                                                                data-semester-id="{{ $semester->id }}">
-                                                                                {{ number_format($mark->final_marks, 1) }}
-                                                                            </span>
+                                                                    <th class="text-center">{{ $semester->semester_name }}</th>
+                                                                @endforeach
+                                                                <th class="text-center">Average</th>
+                                                                <th class="text-center" style="width: 14%;">Progress</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach($courses as $course)
+                                                                @php
+                                                                    $courseMarks = collect($results[$course->id] ?? []);
+                                                                    $scores = [];
+                                                                    foreach ($semesters as $semester) {
+                                                                        $scores[$semester->id] = optional($courseMarks->where('semester_id', $semester->id)->first())->final_marks;
+                                                                    }
+                                                                    $existingScores = collect($scores)->filter(fn($score) => $score !== null);
+                                                                    $courseAverage = $existingScores->count() ? round($existingScores->avg(), 1) : null;
+                                                                    [$letterGrade, $gradeClass, $remark, $progressColor] = $gradeBadge($courseAverage ?? 0);
+                                                                    $tagClass = in_array(strtolower($course->course_type), ['core']) ? 'report-tag-core' : 'report-tag-elective';
+                                                                @endphp
+                                                                <tr>
+                                                                    <td>
+                                                                        {{ $course->course_name }}
+                                                                        <span class="report-tag {{ $tagClass }}">{{ $course->course_type }}</span>
+                                                                    </td>
+                                                                    @foreach($semesters as $semester)
+                                                                        @php
+                                                                            $mark = $courseMarks->where('semester_id', $semester->id)->first();
+                                                                            $score = optional($mark)->final_marks;
+                                                                        @endphp
+                                                                        <td class="text-center">
+                                                                            @if($score !== null)
+                                                                                <span class="report-score-cell clickable-mark"
+                                                                                    style="cursor:pointer;"
+                                                                                    data-student-id="{{ $selectedStudent->id }}"
+                                                                                    data-course-id="{{ $course->id }}"
+                                                                                    data-semester-id="{{ $semester->id }}">
+                                                                                    {{ number_format($score, 1) }}
+                                                                                </span>
+                                                                            @else
+                                                                                <span class="text-muted">—</span>
+                                                                            @endif
+                                                                        </td>
+                                                                    @endforeach
+                                                                    <td class="text-center">
+                                                                        @if($courseAverage !== null)
+                                                                            <span class="report-score-cell">{{ number_format($courseAverage, 1) }}</span>
+                                                                            <span class="report-grade-badge {{ $gradeClass }} ms-2">{{ $letterGrade }}</span>
+                                                                        @else
+                                                                            <span class="text-muted">N/A</span>
+                                                                        @endif
+                                                                    </td>
+                                                                    <td class="text-center">
+                                                                        @if($courseAverage !== null)
+                                                                            <div class="report-progress">
+                                                                                <div class="report-progress-fill" style="width: {{ max(0, min(100, $courseAverage)) }}%; background: {{ $progressColor }}"></div>
+                                                                            </div>
                                                                         @else
                                                                             <span class="text-muted">—</span>
                                                                         @endif
                                                                     </td>
-                                                                @endforeach
-                                                                <td class="text-center py-3 bg-light">
-                                                                    <span
-                                                                        class="fw-bold text-dark">{{ $count > 0 ? number_format($annual, 1) : '0.0' }}</span>
-                                                                </td>
-                                                            </tr>
-                                                        @endforeach
-                                                    </tbody>
-                                                </table>
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
 
-                                    <!-- Remarks Section -->
-                                    <div class="card border-0 shadow-sm mt-4">
-                                        <div class="card-header bg-white border-bottom py-3">
-                                            <h5 class="mb-0 fw-bold text-dark">
-                                                <i class="bi bi-chat-quote me-2 text-primary"></i>Term Remarks & Comments
-                                            </h5>
-                                        </div>
-                                        <div class="card-body">
                                             @foreach($semesters as $semester)
                                                 @php
                                                     $comment = isset($comments) ? $comments->get($semester->id) : null;
+                                                    $attendanceSummary = isset($attendanceSummaries) ? $attendanceSummaries->get($semester->id) : null;
+                                                    $endTermUpdate = isset($endTermUpdates) ? $endTermUpdates->get($semester->id) : null;
+                                                    $affective = $comment && is_array($comment->affective_scores) ? $comment->affective_scores : [];
+                                                    $daysAbsent = $attendanceSummary ? max(0, (int) $attendanceSummary['total_school_days'] - (int) $attendanceSummary['days_present']) : null;
                                                 @endphp
-                                                <div class="mb-4 {{ !$loop->last ? 'border-bottom pb-4' : '' }}">
-                                                    <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-calendar-event me-2"></i>{{ $semester->semester_name }}</h6>
-                                                    
-                                                    <form action="{{ route('report.comments.store') }}" method="POST">
+
+                                                <div class="report-block report-term-card">
+                                                    <div class="report-term-title">{{ $semester->semester_name }}</div>
+
+                                                    @if($attendanceSummary)
+                                                        <div class="report-section-title">Attendance Record</div>
+                                                        <div class="report-attendance-row">
+                                                            <div class="report-att-box">
+                                                                <span class="report-att-num">{{ $attendanceSummary['total_school_days'] }}</span>
+                                                                <span class="report-att-lbl">School Days</span>
+                                                            </div>
+                                                            <div class="report-att-box">
+                                                                <span class="report-att-num" style="color: var(--report-green)">{{ $attendanceSummary['days_present'] }}</span>
+                                                                <span class="report-att-lbl">Days Present</span>
+                                                            </div>
+                                                            <div class="report-att-box">
+                                                                <span class="report-att-num" style="color: var(--report-red)">{{ $daysAbsent }}</span>
+                                                                <span class="report-att-lbl">Days Absent</span>
+                                                            </div>
+                                                            <div class="report-att-box">
+                                                                <span class="report-att-num" style="color: var(--report-gold)">{{ $attendanceSummary['attendance_percentage'] !== null ? $attendanceSummary['attendance_percentage'] . '%' : 'N/A' }}</span>
+                                                                <span class="report-att-lbl">Attendance Rate</span>
+                                                            </div>
+                                                        </div>
+
+                                                        @if($canOverrideAttendanceSummary)
+                                                            <form action="{{ route('report.attendance-summary.store') }}" method="POST" class="row g-3 mb-4 no-print">
+                                                                @csrf
+                                                                <input type="hidden" name="student_id" value="{{ $selectedStudent->id }}">
+                                                                <input type="hidden" name="semester_id" value="{{ $semester->id }}">
+                                                                <div class="col-md-3">
+                                                                    <label class="form-label text-muted small fw-bold text-uppercase">Override Days Present</label>
+                                                                    <input type="number" name="days_present" min="0" class="form-control" value="{{ $attendanceSummary['days_present'] }}">
+                                                                </div>
+                                                                <div class="col-md-7">
+                                                                    <label class="form-label text-muted small fw-bold text-uppercase">Override Note</label>
+                                                                    <input type="text" name="note" class="form-control" value="{{ $attendanceSummary['override_note'] }}" placeholder="Optional reason">
+                                                                </div>
+                                                                <div class="col-md-2 d-flex align-items-end">
+                                                                    <button class="btn btn-outline-dark w-100" type="submit">Save</button>
+                                                                </div>
+                                                            </form>
+                                                        @endif
+                                                    @endif
+
+                                                    <div class="report-section-title">Psychomotor & Affective Skills</div>
+                                                    @if($canOverrideAttendanceSummary)
+                                                        <form action="{{ route('report.affective-scores.store') }}" method="POST" class="no-print">
+                                                            @csrf
+                                                            <input type="hidden" name="student_id" value="{{ $selectedStudent->id }}">
+                                                            <input type="hidden" name="semester_id" value="{{ $semester->id }}">
+                                                            <div class="report-psycho-grid">
+                                                                @foreach($affectiveLabels as $key => $label)
+                                                                    <div class="report-psycho-item">
+                                                                        <div class="report-psycho-label">{{ $label }}</div>
+                                                                        <select name="scores[{{ $key }}]" class="form-select form-select-sm" required>
+                                                                            @for($score = 5; $score >= 1; $score--)
+                                                                                <option value="{{ $score }}" {{ (int) ($affective[$key] ?? 5) === $score ? 'selected' : '' }}>{{ $score }}</option>
+                                                                            @endfor
+                                                                        </select>
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                            <button class="btn btn-outline-success mb-3" type="submit">Save Affective Scores</button>
+                                                        </form>
+                                                    @endif
+
+                                                    <div class="report-psycho-grid {{ $canOverrideAttendanceSummary ? 'd-none d-print-grid' : '' }}">
+                                                        @foreach($affectiveLabels as $key => $label)
+                                                            @php $score = (int) ($affective[$key] ?? 0); @endphp
+                                                            <div class="report-psycho-item">
+                                                                <div class="report-psycho-label">{{ $label }}</div>
+                                                                <div class="report-stars">
+                                                                    @for($i = 1; $i <= 5; $i++)
+                                                                        <span class="{{ $i <= $score ? '' : 'empty' }}">★</span>
+                                                                    @endfor
+                                                                </div>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+
+                                                    @if(!$canOverrideAttendanceSummary)
+                                                        <div class="report-psycho-grid">
+                                                            @foreach($affectiveLabels as $key => $label)
+                                                                @php $score = (int) ($affective[$key] ?? 0); @endphp
+                                                                <div class="report-psycho-item">
+                                                                    <div class="report-psycho-label">{{ $label }}</div>
+                                                                    <div class="report-stars">
+                                                                        @for($i = 1; $i <= 5; $i++)
+                                                                            <span class="{{ $i <= $score ? '' : 'empty' }}">★</span>
+                                                                        @endfor
+                                                                    </div>
+                                                                </div>
+                                                            @endforeach
+                                                        </div>
+                                                    @endif
+
+                                                    <div class="report-rating-key">
+                                                        <span>1 – Poor</span>
+                                                        <span>2 – Fair</span>
+                                                        <span>3 – Good</span>
+                                                        <span>4 – Very Good</span>
+                                                        <span>5 – Excellent</span>
+                                                    </div>
+
+                                                    <div class="report-section-title">Remarks & Comments</div>
+                                                    <div class="report-comments-grid mb-3">
+                                                        <div class="report-comment-box">
+                                                            <span class="report-comment-label">Class Teacher's Remark</span>
+                                                            <p>{{ $comment && $comment->teacher_comment ? $comment->teacher_comment : 'No remark yet.' }}</p>
+                                                        </div>
+                                                        <div class="report-comment-box">
+                                                            <span class="report-comment-label">Principal's Remark</span>
+                                                            <p>{{ $comment && $comment->principal_comment ? $comment->principal_comment : 'No remark yet.' }}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    @include('results.partials.end-term-update', ['endTermUpdate' => $endTermUpdate, 'semester' => $semester])
+
+                                                    <form action="{{ route('report.comments.store') }}" method="POST" class="no-print">
                                                         @csrf
                                                         <input type="hidden" name="student_id" value="{{ $selectedStudent->id }}">
                                                         <input type="hidden" name="semester_id" value="{{ $semester->id }}">
                                                         <input type="hidden" name="type" value="teacher">
-                                                        
-                                                        <label class="form-label text-muted small fw-bold text-uppercase">Class Teacher's Remark</label>
+                                                        <label class="form-label text-muted small fw-bold text-uppercase">Update Class Teacher's Remark</label>
                                                         <div class="input-group">
-                                                            <textarea class="form-control" name="comment" rows="2" placeholder="Enter remark...">{{ $comment ? $comment->teacher_comment : '' }}</textarea>
-                                                            <button class="btn btn-outline-primary" type="submit"><i class="bi bi-save me-1"></i>Save</button>
+                                                            <textarea class="form-control" name="comment" rows="3" placeholder="Enter remark...">{{ $comment ? $comment->teacher_comment : '' }}</textarea>
+                                                            <button class="btn btn-outline-primary" type="submit">Save</button>
                                                         </div>
-                                                        @if($comment && $comment->principal_comment)
-                                                            <div class="mt-3 p-3 bg-light rounded border-start border-4 border-dark">
-                                                                <p class="mb-1 text-muted small fw-bold text-uppercase">Principal's Remark</p>
-                                                                <p class="mb-0 text-dark fst-italic">"{{ $comment->principal_comment }}"</p>
-                                                            </div>
-                                                        @endif
                                                     </form>
                                                 </div>
                                             @endforeach
                                         </div>
+
+                                        <div class="report-footer">
+                                            <div class="report-footer-left">
+                                                {{ $schoolName }}<br>
+                                                Generated on {{ now()->format('d F Y, h:i A') }}. Teacher view.
+                                            </div>
+                                            <div class="report-footer-stamp">Section Copy</div>
+                                        </div>
                                     </div>
                                 @else
-                                    <!-- Empty State -->
                                     <div class="card border-0 shadow-sm">
                                         <div class="card-body text-center py-5">
                                             <i class="bi bi-person-bounding-box fs-1 text-muted opacity-25"></i>
                                             <h5 class="mt-3 text-muted">No Student Selected</h5>
-                                            <p class="text-muted">Select a section and student from the sidebar to view detailed
-                                                results.</p>
+                                            <p class="text-muted">Select a section and student from the sidebar to view the report card.</p>
                                         </div>
                                     </div>
                                 @endif
@@ -312,7 +407,6 @@
         </div>
     </div>
 
-    <!-- Breakdown Modal -->
     <div class="modal fade" id="breakdownModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">

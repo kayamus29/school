@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\StudentFee;
+use App\Models\StudentPayment;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,6 +32,11 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.env') === 'production') {
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
+
+        Relation::morphMap([
+            'student_fee' => StudentFee::class,
+            'student_payment' => StudentPayment::class,
+        ]);
 
         // Share site settings globally with all views
         view()->composer('*', function ($view) {

@@ -6,13 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\SchoolClass;
 use App\Models\AssignedTeacher;
-use App\Models\StudentCourseExemption;
 use Illuminate\Http\Request;
 use App\Traits\SchoolSession;
 use App\Interfaces\CourseInterface;
 use App\Http\Requests\CourseStoreRequest;
 use App\Interfaces\SchoolSessionInterface;
 use App\Repositories\PromotionRepository;
+use App\Models\StudentCourseExclusion;
 use Illuminate\Support\Facades\Auth;
 
 class CourseController extends Controller
@@ -130,16 +130,11 @@ class CourseController extends Controller
         // Scope Check? accessing courses of a class. Public info for that class effectively.
         // But let's be safe.
 
-        $exemptedCourseIds = StudentCourseExemption::where('session_id', $current_school_session_id)
-            ->where('student_id', $student_id)
-            ->pluck('course_id');
-
-        $courses = Course::where('class_id', $class_info->class_id)
-            ->where('session_id', $current_school_session_id)
-            ->when($exemptedCourseIds->isNotEmpty(), function ($query) use ($exemptedCourseIds) {
-                $query->whereNotIn('id', $exemptedCourseIds);
-            })
-            ->get();
+        $courses = StudentCourseExclusion::filterCoursesForStudent(
+            $this->schoolCourseRepository->getByClassId($class_info->class_id),
+            (int) $student_id,
+            (int) $current_school_session_id
+        );
 
         $data = [
             'class_info' => $class_info,

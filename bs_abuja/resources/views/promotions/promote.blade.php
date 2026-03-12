@@ -23,6 +23,7 @@
                                         <th scope="col">#ID Card Number</th>
                                         <th scope="col">First Name</th>
                                         <th scope="col">Last Name</th>
+                                        <th scope="col">Decision</th>
                                         <th scope="col">Previous Class</th>
                                         <th scope="col">Previous Section</th>
                                         <th scope="col">Promoting to Class</th>
@@ -38,6 +39,19 @@
                                             </th>
                                             <td>{{$student->student->first_name}}</td>
                                             <td>{{$student->student->last_name}}</td>
+                                            <td>
+                                                @php $review = $reviews[$student->student->id] ?? null; @endphp
+                                                @if($review)
+                                                    <span class="badge {{ $review->final_status == 'promoted' ? 'bg-success' : ($review->final_status == 'probation' ? 'bg-warning text-dark' : 'bg-danger') }}">
+                                                        {{ strtoupper($review->final_status) }}
+                                                    </span>
+                                                    @if($review->is_finalized)
+                                                        <div><small class="text-muted">Finalized</small></div>
+                                                    @endif
+                                                @else
+                                                    <span class="badge bg-secondary">MANUAL</span>
+                                                @endif
+                                            </td>
                                             <td>{{$schoolClass->class_name}}</td>
                                             <td>{{$section->section_name}}</td>
                                             <td>
@@ -90,4 +104,3 @@
     }
 </script>
 @endsection
-

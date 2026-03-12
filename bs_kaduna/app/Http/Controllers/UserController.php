@@ -14,6 +14,8 @@ use App\Http\Requests\TeacherStoreRequest;
 use App\Interfaces\SchoolSessionInterface;
 use App\Repositories\StudentParentInfoRepository;
 use App\Models\AssignedTeacher;
+use App\Models\Course;
+use App\Models\StudentCourseExclusion;
 use Illuminate\Support\Facades\Auth;
 
 use App\Interfaces\WalletServiceInterface;
@@ -216,11 +218,44 @@ class UserController extends Controller
         $current_school_session_id = $this->getSchoolCurrentSession();
         $promotion_info = $this->promotionRepository->getPromotionInfoById($current_school_session_id, $id);
         $walletBalance = $this->walletService->getBalance($id);
+        $allCourses = collect();
+        $activeCourses = collect();
+        $removedCourses = collect();
+        $canManageStudentSubjects = false;
+
+        if ($promotion_info) {
+            $allCourses = Course::where('class_id', $promotion_info->class_id)
+                ->where('session_id', $current_school_session_id)
+                ->orderBy('course_name')
+                ->get();
+
+            $removedCourseIds = StudentCourseExclusion::excludedCourseIdsForStudent($id, $current_school_session_id);
+            $activeCourses = $allCourses->reject(fn ($course) => in_array((int) $course->id, $removedCourseIds, true))->values();
+            $removedCourses = StudentCourseExclusion::with(['course', 'remover'])
+                ->where('student_id', $id)
+                ->where('session_id', $current_school_session_id)
+                ->get();
+        }
+
+        if (Auth::user()->hasRole('Admin')) {
+            $canManageStudentSubjects = true;
+        } elseif ($promotion_info && Auth::user()->hasRole('Teacher')) {
+            $canManageStudentSubjects = AssignedTeacher::query()
+                ->where('teacher_id', Auth::id())
+                ->where('session_id', $current_school_session_id)
+                ->where('class_id', $promotion_info->class_id)
+                ->where('section_id', $promotion_info->section_id)
+                ->whereNull('course_id')
+                ->exists();
+        }
 
         $data = [
             'student' => $student,
             'promotion_info' => $promotion_info,
-            'walletBalance' => $walletBalance
+            'walletBalance' => $walletBalance,
+            'activeCourses' => $activeCourses,
+            'removedCourses' => $removedCourses,
+            'canManageStudentSubjects' => $canManageStudentSubjects,
         ];
 
         return view('students.profile', $data);

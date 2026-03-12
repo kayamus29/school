@@ -19,10 +19,10 @@ use App\Interfaces\AcademicSettingInterface;
 use App\Repositories\GradingSystemRepository;
 use App\Models\SchoolClass;
 use App\Models\AssignedTeacher;
-use App\Models\StudentCourseExemption;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use App\Models\ExamRule;
+use App\Models\StudentCourseExclusion;
 
 class MarkController extends Controller
 {
@@ -183,21 +183,15 @@ class MarkController extends Controller
             $studentsWithMarks = $markRepository->getAll($current_school_session_id, $semester_id, $class_id, $section_id, $course_id);
             $studentsWithMarks = $studentsWithMarks->groupBy('student_id');
 
-            $sectionStudents = $this->userRepository->getAllStudents($current_school_session_id, $class_id, $section_id);
-            $exemptedStudentIds = StudentCourseExemption::where('session_id', $current_school_session_id)
-                ->where('course_id', $course_id)
-                ->pluck('student_id')
-                ->toArray();
-
-            if (!empty($exemptedStudentIds)) {
-                $studentsWithMarks = $studentsWithMarks->reject(function ($marks, $studentId) use ($exemptedStudentIds) {
-                    return in_array((int) $studentId, $exemptedStudentIds, true);
-                });
-
-                $sectionStudents = $sectionStudents->reject(function ($promotion) use ($exemptedStudentIds) {
-                    return in_array((int) $promotion->student_id, $exemptedStudentIds, true);
-                });
-            }
+            $sectionStudents = $this->userRepository->getAllStudents($current_school_session_id, $class_id, $section_id)
+                ->reject(function ($studentPromotion) use ($current_school_session_id, $course_id) {
+                    return in_array(
+                        (int) $course_id,
+                        StudentCourseExclusion::excludedCourseIdsForStudent((int) $studentPromotion->student_id, (int) $current_school_session_id),
+                        true
+                    );
+                })
+                ->values();
 
             $final_marks_submitted = false;
             $final_marks_submit_count = $markRepository->getFinalMarksCount($current_school_session_id, $semester_id, $class_id, $section_id, $course_id);
@@ -277,19 +271,12 @@ class MarkController extends Controller
 
         $rows = [];
         $errors = [];
-        $submittedStudentIds = array_map('intval', array_keys((array) $request->student_mark));
-        if (!empty($submittedStudentIds)) {
-            $exemptedSubmitted = StudentCourseExemption::where('session_id', $current_school_session_id)
-                ->where('course_id', $request->course_id)
-                ->whereIn('student_id', $submittedStudentIds)
-                ->pluck('student_id')
-                ->toArray();
-
-            if (!empty($exemptedSubmitted)) {
-                return back()->withError('Cannot save marks for exempted students in this subject.')->withInput();
-            }
-        }
-
+        $excludedStudentIds = StudentCourseExclusion::query()
+            ->where('session_id', $current_school_session_id)
+            ->where('course_id', $request->course_id)
+            ->pluck('student_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
         if ($request->student_mark) {
             // 1. Get all relevant Exam IDs from the request
             $examIds = [];
@@ -304,6 +291,9 @@ class MarkController extends Controller
             $examRules = ExamRule::whereIn('exam_id', $examIds)->get()->keyBy('exam_id');
 
             foreach ($request->student_mark as $id => $stm) {
+                if (in_array((int) $id, $excludedStudentIds, true)) {
+                    continue;
+                }
                 foreach ($stm as $exam => $breakdown) {
                     $row = [];
                     $row['class_id'] = $request->class_id;
@@ -429,8 +419,17 @@ class MarkController extends Controller
         ]);
 
         $rows = [];
+        $excludedStudentIds = StudentCourseExclusion::query()
+            ->where('session_id', $current_school_session_id)
+            ->where('course_id', $request->course_id)
+            ->pluck('student_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
         if ($request->calculated_mark) {
             foreach ($request->calculated_mark as $id => $cmark) {
+                if (in_array((int) $id, $excludedStudentIds, true)) {
+                    continue;
+                }
                 $row = [];
                 $row['class_id'] = $request->class_id;
                 $row['student_id'] = $id;
@@ -474,6 +473,11 @@ class MarkController extends Controller
         $section_id = $request->query('section_id');
         $course_id = $request->query('course_id');
         $course_name = $request->query('course_name');
+
+        $isExcluded = in_array((int) $course_id, StudentCourseExclusion::excludedCourseIdsForStudent((int) $student_id, (int) $session_id), true);
+        if ($isExcluded) {
+            abort(404);
+        }
 
         $markRepository = new MarkRepository();
         $marks = $markRepository->getAllByStudentId($session_id, $semester_id, $class_id, $section_id, $course_id, $student_id);

@@ -56,7 +56,7 @@
                                         <div class="col-md-2">
                                             <button type="button" class="btn btn-success w-100" data-bs-toggle="modal"
                                                 data-bs-target="#finalizeModal">
-                                                <i class="bi bi-check-all"></i> Finalize Batch
+                                                <i class="bi bi-check-all"></i> Finalize Decisions
                                             </button>
                                         </div>
                                     @endif
@@ -208,7 +208,7 @@
                 <input type="hidden" name="section_id" value="{{ $section_id }}">
                 <div class="modal-content border-0 shadow">
                     <div class="modal-header bg-success text-white">
-                        <h5 class="modal-title">Finalize Promotion Batch</h5>
+                        <h5 class="modal-title">Finalize Promotion Decisions</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                             aria-label="Close"></button>
                     </div>
@@ -217,15 +217,15 @@
                             is irreversible.</p>
                         <p>Once finalized:</p>
                         <ol>
-                            <li>Students will be officially marked for promotion/retention.</li>
-                            <li>Promotion records will be updated.</li>
-                            <li>Financial arrears will be carried forward.</li>
+                            <li>Students will be officially marked for promotion, retention, or probation.</li>
+                            <li>These academic decisions will be locked from further editing.</li>
+                            <li>You will still use the manual promotion screen to place students into the destination session.</li>
                             <li>This batch will be LOCKED and cannot be edited.</li>
                         </ol>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success">Finalize & Lock Everything</button>
+                        <button type="submit" class="btn btn-success">Finalize Decisions</button>
                     </div>
                 </div>
             </form>

@@ -37,6 +37,32 @@
                                             </form>
                                         </div>
                                     </div>
+                                    <div class="col-md-4 mb-4">
+                                        <div class="p-3 border bg-light shadow-sm">
+                                            <h6>Roll Over New Session</h6>
+                                            <p class="text-danger">
+                                                <small><i class="bi bi-exclamation-diamond-fill me-2"></i> This creates a new session and copies classes, sections, semesters, subjects, promotion policies and teacher assignments from a selected source session.</small>
+                                            </p>
+                                            <form action="{{ route('school.session.rollover') }}" method="POST">
+                                                @csrf
+                                                <div class="mb-3">
+                                                    <label class="form-label small">Source Session</label>
+                                                    <select class="form-select form-select-sm" name="source_session_id" required>
+                                                        @foreach($school_sessions as $school_session)
+                                                            <option value="{{ $school_session->id }}" {{ $school_session->id == $current_school_session_id ? 'selected' : '' }}>
+                                                                {{ $school_session->session_name }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label small">New Session Name</label>
+                                                    <input type="text" class="form-control form-control-sm" name="session_name" placeholder="2027 - 2028" required>
+                                                </div>
+                                                <button class="btn btn-sm btn-outline-dark" type="submit"><i class="bi bi-arrow-repeat"></i> Roll Over</button>
+                                            </form>
+                                        </div>
+                                    </div>
                                 @endif
                                 <div class="col-md-4 mb-4">
                                     <div class="p-3 border bg-light shadow-sm">
@@ -244,6 +270,14 @@
                                                     </select>
                                                 </div>
                                                 <div class="mb-3">
+                                                    <p>Assignment role:<sup><i class="bi bi-asterisk text-primary"></i></sup></p>
+                                                    <select class="form-select form-select-sm" name="assignment_role" required>
+                                                        <option value="subject_teacher">Subject Teacher</option>
+                                                        <option value="section_teacher">Section Teacher</option>
+                                                        <option value="class_supervisor">Class Supervisor</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
                                                     <p>Assign to semester:<sup><i class="bi bi-asterisk text-primary"></i></sup>
                                                     </p>
                                                     <select class="form-select form-select-sm" aria-label=".form-select-sm"
@@ -279,9 +313,10 @@
                                                 </div>
                                                 <div>
                                                     <p class="mt-2">Assign to course:<sup><i
-                                                                class="bi bi-asterisk text-primary"></i></sup></p>
+                                                                class="bi bi-asterisk text-primary"></i></sup> <span class="text-muted">(required for subject teacher only)</span></p>
                                                     <select class="form-select form-select-sm" id="course-select"
-                                                        aria-label=".form-select-sm" name="course_id" required>
+                                                        aria-label=".form-select-sm" name="course_id">
+                                                        <option value="">No course</option>
                                                     </select>
                                                 </div>
                                                 <button type="submit" class="mt-3 btn btn-sm btn-outline-primary"><i

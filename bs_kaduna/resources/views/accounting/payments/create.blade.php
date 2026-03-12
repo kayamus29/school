@@ -42,7 +42,7 @@
                                     <select class="form-select select2" name="student_id" id="student_select" required>
                                         <option value="">-- Choose Student --</option>
                                         @foreach($students as $student)
-                                            <option value="{{ $student->id }}">{{ $student->first_name }}
+                                            <option value="{{ $student->id }}" {{ (string) request('student_id') === (string) $student->id ? 'selected' : '' }}>{{ $student->first_name }}
                                                 {{ $student->last_name }} (ID: {{ $student->id }})
                                             </option>
                                         @endforeach
@@ -133,17 +133,11 @@
             $(document).ready(function () {
                 $('#student_select').on('change', function () {
                     var studentId = $(this).val();
-                    var feeSelect = $('#fee_select');
-                    var feeInfo = $('#fee_info');
-
-                    // Reset fields
-                    feeSelect.empty().append('<option value="">-- Loading Fees... --</option>');
-                    feeInfo.text('');
 
                     if (studentId) {
-                        // 1. Fetch Student Details (Auto-fill)
+                        var detailsUrl = "{{ route('accounting.payments.student.details', ['id' => '__STUDENT__']) }}".replace('__STUDENT__', studentId);
                         $.ajax({
-                            url: "{{ url('school/accounting/payments/student') }}/" + studentId + "/details",
+                            url: detailsUrl,
                             type: 'GET',
                             dataType: 'json',
                             success: function(details) {
@@ -155,20 +149,12 @@
                                 }
                             }
                         });
-                    } else {
-                        feeSelect.empty().append('<option value="">-- Select Student First --</option>');
-                        feeSelect.prop('disabled', true);
                     }
                 });
 
-                // Auto-fill amount when fee is selected
-                $('#fee_select').on('change', function () {
-                    var selectedOption = $(this).find('option:selected');
-                    var amount = selectedOption.data('amount');
-                    if (amount) {
-                        $('input[name="amount_paid"]').val(amount);
-                    }
-                });
+                if ($('#student_select').val()) {
+                    $('#student_select').trigger('change');
+                }
             });
         </script>
     @endpush

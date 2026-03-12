@@ -61,15 +61,28 @@
                                                                                 </p>
                                                                                 <div class="mb-3 px-3 py-2 bg-light rounded shadow-sm">
                                                                                     @php
-                                                                                        $sectionTeacher = $school_class->assignedTeachers
+                                                                                        $sectionTeachers = $school_class->assignedTeachers
                                                                                             ->where('section_id', $school_section->id)
                                                                                             ->whereNull('course_id')
-                                                                                            ->first();
+                                                                                            ->filter(fn($assignment) => $assignment->effective_assignment_role === \App\Models\AssignedTeacher::ROLE_SECTION_TEACHER)
+                                                                                            ->values();
+                                                                                        $sectionSupervisor = $school_class->assignedTeachers
+                                                                                            ->where('section_id', $school_section->id)
+                                                                                            ->whereNull('course_id')
+                                                                                            ->first(fn($assignment) => $assignment->effective_assignment_role === \App\Models\AssignedTeacher::ROLE_CLASS_SUPERVISOR);
                                                                                     @endphp
-                                                                                    <i class="bi bi-person-workspace text-primary"></i> <strong>Section Teacher:</strong>
-                                                                                    <span class="ms-2 @if(!$sectionTeacher) text-muted @else text-dark fw-bold @endif">
-                                                                                        {{ $sectionTeacher ? $sectionTeacher->teacher->first_name . ' ' . $sectionTeacher->teacher->last_name : 'Not Assigned' }}
-                                                                                    </span>
+                                                                                    <div class="mb-1">
+                                                                                        <i class="bi bi-person-workspace text-primary"></i> <strong>Section Teachers:</strong>
+                                                                                        <span class="ms-2 @if($sectionTeachers->isEmpty()) text-muted @else text-dark fw-bold @endif">
+                                                                                            {{ $sectionTeachers->isNotEmpty() ? $sectionTeachers->map(fn($assignment) => $assignment->teacher->first_name . ' ' . $assignment->teacher->last_name)->implode(', ') : 'Not Assigned' }}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <i class="bi bi-person-badge text-secondary"></i> <strong>Class Supervisor:</strong>
+                                                                                        <span class="ms-2 @if(!$sectionSupervisor) text-muted @else text-dark fw-bold @endif">
+                                                                                            {{ $sectionSupervisor ? $sectionSupervisor->teacher->first_name . ' ' . $sectionSupervisor->teacher->last_name : 'Not Assigned' }}
+                                                                                        </span>
+                                                                                    </div>
                                                                                 </div>
                                                                                 <div class="list-group">
                                                                                     <a href="{{route('student.list.show', ['class_id' => $school_class->id, 'section_id' => $school_section->id, 'section_name' => $school_section->section_name])}}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
@@ -189,22 +202,58 @@
                                                                         <div class="accordion-body">
                                                                             <!-- Section Teacher -->
                                                                             @php
-                                                                                $currSectionTeacher = $school_class->assignedTeachers
+                                                                                $currSectionTeachers = $school_class->assignedTeachers
                                                                                     ->where('section_id', $school_section->id)
                                                                                     ->whereNull('course_id')
-                                                                                    ->first();
+                                                                                    ->filter(fn($assignment) => $assignment->effective_assignment_role === \App\Models\AssignedTeacher::ROLE_SECTION_TEACHER)
+                                                                                    ->values();
+                                                                                $currSectionTeacher = $currSectionTeachers->get(0);
+                                                                                $currAssistantSectionTeacher = $currSectionTeachers->get(1);
+                                                                                $currSupervisor = $school_class->assignedTeachers
+                                                                                    ->where('section_id', $school_section->id)
+                                                                                    ->whereNull('course_id')
+                                                                                    ->first(fn($assignment) => $assignment->effective_assignment_role === \App\Models\AssignedTeacher::ROLE_CLASS_SUPERVISOR);
                                                                             @endphp
                                                                             <div class="row mb-4 align-items-center">
                                                                                 <div class="col-md-4">
                                                                                     <label class="fw-bold"><i class="bi bi-person-workspace text-primary"></i> Section Teacher</label>
-                                                                                    <p class="small text-muted mb-0">The primary overseer for this section.</p>
+                                                                                    <p class="small text-muted mb-0">You can assign up to two section teachers for this section.</p>
                                                                                 </div>
                                                                                 <div class="col-md-8">
-                                                                                    <select class="form-select" name="section_teachers[{{$school_section->id}}]">
+                                                                                    <label class="small text-muted">Primary Section Teacher</label>
+                                                                                    <select class="form-select mb-2" name="section_teachers[{{$school_section->id}}][]">
                                                                                         <option value="">-- Unassigned --</option>
                                                                                         @foreach($teachers as $teacher)
                                                                                             <option value="{{$teacher->id}}" 
                                                                                                 @if($currSectionTeacher && $currSectionTeacher->teacher_id == $teacher->id) selected @endif>
+                                                                                                {{$teacher->first_name}} {{$teacher->last_name}}
+                                                                                            </option>
+                                                                                        @endforeach
+                                                                                    </select>
+                                                                                    <label class="small text-muted">Assistant Section Teacher</label>
+                                                                                    <select class="form-select" name="section_teachers[{{$school_section->id}}][]">
+                                                                                        <option value="">-- Unassigned --</option>
+                                                                                        @foreach($teachers as $teacher)
+                                                                                            <option value="{{$teacher->id}}" 
+                                                                                                @if($currAssistantSectionTeacher && $currAssistantSectionTeacher->teacher_id == $teacher->id) selected @endif>
+                                                                                                {{$teacher->first_name}} {{$teacher->last_name}}
+                                                                                            </option>
+                                                                                        @endforeach
+                                                                                    </select>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div class="row mb-4 align-items-center">
+                                                                                <div class="col-md-4">
+                                                                                    <label class="fw-bold"><i class="bi bi-person-badge text-secondary"></i> Class Supervisor</label>
+                                                                                    <p class="small text-muted mb-0">Supervisor can manage student reports in this section.</p>
+                                                                                </div>
+                                                                                <div class="col-md-8">
+                                                                                    <select class="form-select" name="section_supervisors[{{$school_section->id}}]">
+                                                                                        <option value="">-- Unassigned --</option>
+                                                                                        @foreach($teachers as $teacher)
+                                                                                            <option value="{{$teacher->id}}" 
+                                                                                                @if($currSupervisor && $currSupervisor->teacher_id == $teacher->id) selected @endif>
                                                                                                 {{$teacher->first_name}} {{$teacher->last_name}}
                                                                                             </option>
                                                                                         @endforeach
@@ -282,4 +331,3 @@
     </div>
 </div>
 @endsection
-

@@ -29,7 +29,8 @@ class StudentPayment extends Model
         'payment_method',
         'transaction_date',
         'reference_no',
-        'received_by'
+        'received_by',
+        'description',
     ];
 
     public function student()

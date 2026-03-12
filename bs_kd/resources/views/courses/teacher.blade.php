@@ -116,6 +116,16 @@
                                                                                                         class="bi bi-file-post me-2"></i> Create Assignment</a>
                                                                                             </li>
                                                                                             @endif
+                                                                                            @if($course->schoolClass && $course->section && $course->course)
+                                                                                            <li><a href="{{route('lesson-plans.create', [
+                                                    'class_id' => $course->schoolClass->id,
+                                                    'section_id' => $course->section->id,
+                                                    'course_id' => $course->course->id,
+                                                    'semester_id' => $selected_semester_id
+                                                ])}}" role="button" class="dropdown-item"><i
+                                                                                                        class="bi bi-journal-plus me-2"></i> Add Lesson Plan</a>
+                                                                                            </li>
+                                                                                            @endif
                                                                                             @if($course->course)
                                                                                             <li><a href="{{route('assignment.list.show', ['course_id' => $course->course->id])}}"
                                                                                                     role="button" class="dropdown-item"><i

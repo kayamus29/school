@@ -12,14 +12,51 @@ class AssignedTeacherRepository implements AssignedTeacherInterface
     public function assign($request)
     {
         try {
-            // Use updateOrCreate to prevent duplicates
+            $role = $request['assignment_role'] ?? ($request['course_id'] ? AssignedTeacher::ROLE_SUBJECT_TEACHER : AssignedTeacher::ROLE_SECTION_TEACHER);
+            $courseId = $role === AssignedTeacher::ROLE_SUBJECT_TEACHER ? ($request['course_id'] ?: null) : null;
+
+            if ($role === AssignedTeacher::ROLE_CLASS_SUPERVISOR) {
+                AssignedTeacher::updateOrCreate(
+                    [
+                        'class_id' => $request['class_id'],
+                        'section_id' => $request['section_id'],
+                        'course_id' => null,
+                        'assignment_role' => AssignedTeacher::ROLE_CLASS_SUPERVISOR,
+                        'session_id' => $request['session_id'],
+                        'semester_id' => $request['semester_id'],
+                    ],
+                    [
+                        'teacher_id' => $request['teacher_id'],
+                    ]
+                );
+
+                return;
+            }
+
+            if ($role === AssignedTeacher::ROLE_SECTION_TEACHER) {
+                AssignedTeacher::firstOrCreate(
+                    [
+                        'teacher_id' => $request['teacher_id'],
+                        'class_id' => $request['class_id'],
+                        'section_id' => $request['section_id'],
+                        'course_id' => null,
+                        'assignment_role' => AssignedTeacher::ROLE_SECTION_TEACHER,
+                        'session_id' => $request['session_id'],
+                        'semester_id' => $request['semester_id'],
+                    ]
+                );
+
+                return;
+            }
+
             AssignedTeacher::updateOrCreate(
                 [
                     'class_id' => $request['class_id'],
                     'section_id' => $request['section_id'],
-                    'course_id' => $request['course_id'],
+                    'course_id' => $courseId,
+                    'assignment_role' => AssignedTeacher::ROLE_SUBJECT_TEACHER,
                     'session_id' => $request['session_id'],
-                    'semester_id' => $request['semester_id']
+                    'semester_id' => $request['semester_id'],
                 ],
                 [
                     'teacher_id' => $request['teacher_id']
@@ -61,7 +98,7 @@ class AssignedTeacherRepository implements AssignedTeacherInterface
         if ($course_id) {
             $query->where('course_id', $course_id);
         } else {
-            $query->whereNull('course_id');
+            $query->sectionTeachers();
         }
 
         return $query->first();

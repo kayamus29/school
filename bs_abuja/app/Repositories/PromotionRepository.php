@@ -54,9 +54,9 @@ class PromotionRepository
                 Promotion::updateOrCreate([
                     'student_id' => $row['student_id'],
                     'session_id' => $row['session_id'],
+                ], [
                     'class_id' => $row['class_id'],
                     'section_id' => $row['section_id'],
-                ], [
                     'id_card_number' => $row['id_card_number'],
                 ]);
 
@@ -138,5 +138,24 @@ class PromotionRepository
             ->where('session_id', $session_id)
             ->distinct('section_id')
             ->get();
+    }
+
+    public function isSectionPromotedToSession($sourceSessionId, $targetSessionId, $classId, $sectionId)
+    {
+        $studentIds = Promotion::where('session_id', $sourceSessionId)
+            ->where('class_id', $classId)
+            ->where('section_id', $sectionId)
+            ->pluck('student_id');
+
+        if ($studentIds->isEmpty()) {
+            return false;
+        }
+
+        $promotedCount = Promotion::where('session_id', $targetSessionId)
+            ->whereIn('student_id', $studentIds)
+            ->distinct('student_id')
+            ->count('student_id');
+
+        return $promotedCount === $studentIds->count();
     }
 }

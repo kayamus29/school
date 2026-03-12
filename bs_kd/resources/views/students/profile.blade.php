@@ -194,66 +194,6 @@
                                         </div>
                                         <div class="card bg-light mt-3">
                                             <div class="card-body">
-                                                <h5 class="card-title"><i class="bi bi-journal-x"></i> Subject Enrollment Overrides</h5>
-                                                @if(($can_manage_subject_exemptions ?? false) || Auth::user()->hasRole('Admin'))
-                                                    <p class="small text-muted mb-3">
-                                                        Remove subjects a student should not take for this session. Removed subjects are hidden from results and mark-entry lists.
-                                                    </p>
-                                                @endif
-                                                <div class="table-responsive">
-                                                    <table class="table table-sm mb-0">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Subject</th>
-                                                                <th>Status</th>
-                                                                @if(($can_manage_subject_exemptions ?? false) || Auth::user()->hasRole('Admin'))
-                                                                    <th class="text-end">Action</th>
-                                                                @endif
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            @forelse($class_courses ?? [] as $course)
-                                                                @php $isExempted = in_array($course->id, ($exempted_course_ids ?? collect())->toArray()); @endphp
-                                                                <tr>
-                                                                    <td>{{ $course->course_name }}</td>
-                                                                    <td>
-                                                                        @if($isExempted)
-                                                                            <span class="badge bg-warning text-dark">Removed</span>
-                                                                        @else
-                                                                            <span class="badge bg-success">Active</span>
-                                                                        @endif
-                                                                    </td>
-                                                                    @if(($can_manage_subject_exemptions ?? false) || Auth::user()->hasRole('Admin'))
-                                                                        <td class="text-end">
-                                                                            @if($isExempted)
-                                                                                <form action="{{ route('student.subject.restore', ['id' => $student->id]) }}" method="POST" class="d-inline">
-                                                                                    @csrf
-                                                                                    <input type="hidden" name="course_id" value="{{ $course->id }}">
-                                                                                    <button type="submit" class="btn btn-sm btn-outline-success">Restore</button>
-                                                                                </form>
-                                                                            @else
-                                                                                <form action="{{ route('student.subject.remove', ['id' => $student->id]) }}" method="POST" class="d-inline">
-                                                                                    @csrf
-                                                                                    <input type="hidden" name="course_id" value="{{ $course->id }}">
-                                                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                                                        onclick="return confirm('Remove {{ $course->course_name }} for this student?')">Remove</button>
-                                                                                </form>
-                                                                            @endif
-                                                                        </td>
-                                                                    @endif
-                                                                </tr>
-                                                            @empty
-                                                                <tr>
-                                                                    <td colspan="3" class="text-muted">No subjects configured for this class in the current session.</td>
-                                                                </tr>
-                                                            @endforelse
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card bg-light mt-3">
-                                            <div class="card-body">
                                                 <h5 class="card-title"><i class="bi bi-wallet2"></i> Wallet Balance</h5>
                                                 @php
                                                     $val = $walletBalance ?? 0;
@@ -272,6 +212,70 @@
                                                 </a>
                                             </div>
                                         </div>
+
+                                        @if($promotion_info)
+                                            <div class="card mt-3">
+                                                <div class="card-body">
+                                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                                        <h5 class="card-title mb-0"><i class="bi bi-journal-check"></i> Subject Selection</h5>
+                                                        <span class="badge bg-primary">{{ $activeCourses->count() }} Active</span>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <h6 class="small text-uppercase text-muted">Active Subjects</h6>
+                                                        @forelse($activeCourses as $course)
+                                                            <div class="d-flex justify-content-between align-items-center border rounded px-3 py-2 mb-2">
+                                                                <div>
+                                                                    <div class="fw-semibold">{{ $course->course_name }}</div>
+                                                                    <div class="small text-muted">{{ $course->course_type }}</div>
+                                                                </div>
+                                                                @if($canManageStudentSubjects)
+                                                                    <form action="{{ route('student.subjects.remove') }}" method="POST" class="d-flex align-items-center gap-2">
+                                                                        @csrf
+                                                                        <input type="hidden" name="student_id" value="{{ $student->id }}">
+                                                                        <input type="hidden" name="course_id" value="{{ $course->id }}">
+                                                                        <input type="text" name="reason" class="form-control form-control-sm" placeholder="Optional reason">
+                                                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                                            <i class="bi bi-dash-circle"></i> Remove
+                                                                        </button>
+                                                                    </form>
+                                                                @endif
+                                                            </div>
+                                                        @empty
+                                                            <p class="text-muted mb-0">No active subjects found.</p>
+                                                        @endforelse
+                                                    </div>
+
+                                                    <div>
+                                                        <h6 class="small text-uppercase text-muted">Removed Subjects</h6>
+                                                        @forelse($removedCourses as $removedCourse)
+                                                            <div class="d-flex justify-content-between align-items-center border rounded px-3 py-2 mb-2 bg-light">
+                                                                <div>
+                                                                    <div class="fw-semibold">{{ optional($removedCourse->course)->course_name }}</div>
+                                                                    <div class="small text-muted">
+                                                                        Removed by {{ optional($removedCourse->remover)->first_name ?? 'System' }}
+                                                                        @if($removedCourse->reason)
+                                                                            • {{ $removedCourse->reason }}
+                                                                        @endif
+                                                                    </div>
+                                                                </div>
+                                                                @if($canManageStudentSubjects)
+                                                                    <form action="{{ route('student.subjects.restore', $removedCourse->id) }}" method="POST">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                                                            <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                                                        </button>
+                                                                    </form>
+                                                                @endif
+                                                            </div>
+                                                        @empty
+                                                            <p class="text-muted mb-0">No removed subjects.</p>
+                                                        @endforelse
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>

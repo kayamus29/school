@@ -5,9 +5,16 @@ namespace App\Services;
 use App\Models\StudentFee;
 use App\Models\StudentPayment;
 use Illuminate\Support\Facades\DB;
+use App\Services\StudentLedgerSyncService;
 
 class FinancialService
 {
+    protected $studentLedgerSyncService;
+
+    public function __construct(StudentLedgerSyncService $studentLedgerSyncService)
+    {
+        $this->studentLedgerSyncService = $studentLedgerSyncService;
+    }
     /**
      * Record a payment and update the associated student fee balance.
      *
@@ -121,5 +128,7 @@ class FinancialService
                 $fee->save();
             });
         }
+
+        $this->studentLedgerSyncService->syncStudent((int) $student_id);
     }
 }

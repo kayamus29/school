@@ -12,6 +12,7 @@ use App\Interfaces\CourseInterface;
 use App\Http\Requests\CourseStoreRequest;
 use App\Interfaces\SchoolSessionInterface;
 use App\Repositories\PromotionRepository;
+use App\Models\StudentCourseExclusion;
 use Illuminate\Support\Facades\Auth;
 
 class CourseController extends Controller
@@ -129,7 +130,11 @@ class CourseController extends Controller
         // Scope Check? accessing courses of a class. Public info for that class effectively.
         // But let's be safe.
 
-        $courses = $this->schoolCourseRepository->getByClassId($class_info->class_id);
+        $courses = StudentCourseExclusion::filterCoursesForStudent(
+            $this->schoolCourseRepository->getByClassId($class_info->class_id),
+            (int) $student_id,
+            (int) $current_school_session_id
+        );
 
         $data = [
             'class_info' => $class_info,

@@ -14,10 +14,12 @@ use Illuminate\Support\Facades\Log;
 class BillingService
 {
     protected $walletService;
+    protected $studentLedgerSyncService;
 
-    public function __construct(WalletServiceInterface $walletService)
+    public function __construct(WalletServiceInterface $walletService, StudentLedgerSyncService $studentLedgerSyncService)
     {
         $this->walletService = $walletService;
+        $this->studentLedgerSyncService = $studentLedgerSyncService;
     }
 
     /**
@@ -127,6 +129,8 @@ class BillingService
 
                         $totalAmount += $feeTemplate->amount;
                     }
+
+                    $this->studentLedgerSyncService->syncStudent((int) $student->id);
                     $processedCount++;
 
                     // Update Audit Parent incrementally

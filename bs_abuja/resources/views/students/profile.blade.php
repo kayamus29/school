@@ -212,6 +212,70 @@
                                                 </a>
                                             </div>
                                         </div>
+
+                                        @if($promotion_info)
+                                            <div class="card mt-3">
+                                                <div class="card-body">
+                                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                                        <h5 class="card-title mb-0"><i class="bi bi-journal-check"></i> Subject Selection</h5>
+                                                        <span class="badge bg-primary">{{ $activeCourses->count() }} Active</span>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <h6 class="small text-uppercase text-muted">Active Subjects</h6>
+                                                        @forelse($activeCourses as $course)
+                                                            <div class="d-flex justify-content-between align-items-center border rounded px-3 py-2 mb-2">
+                                                                <div>
+                                                                    <div class="fw-semibold">{{ $course->course_name }}</div>
+                                                                    <div class="small text-muted">{{ $course->course_type }}</div>
+                                                                </div>
+                                                                @if($canManageStudentSubjects)
+                                                                    <form action="{{ route('student.subjects.remove') }}" method="POST" class="d-flex align-items-center gap-2">
+                                                                        @csrf
+                                                                        <input type="hidden" name="student_id" value="{{ $student->id }}">
+                                                                        <input type="hidden" name="course_id" value="{{ $course->id }}">
+                                                                        <input type="text" name="reason" class="form-control form-control-sm" placeholder="Optional reason">
+                                                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                                            <i class="bi bi-dash-circle"></i> Remove
+                                                                        </button>
+                                                                    </form>
+                                                                @endif
+                                                            </div>
+                                                        @empty
+                                                            <p class="text-muted mb-0">No active subjects found.</p>
+                                                        @endforelse
+                                                    </div>
+
+                                                    <div>
+                                                        <h6 class="small text-uppercase text-muted">Removed Subjects</h6>
+                                                        @forelse($removedCourses as $removedCourse)
+                                                            <div class="d-flex justify-content-between align-items-center border rounded px-3 py-2 mb-2 bg-light">
+                                                                <div>
+                                                                    <div class="fw-semibold">{{ optional($removedCourse->course)->course_name }}</div>
+                                                                    <div class="small text-muted">
+                                                                        Removed by {{ optional($removedCourse->remover)->first_name ?? 'System' }}
+                                                                        @if($removedCourse->reason)
+                                                                            • {{ $removedCourse->reason }}
+                                                                        @endif
+                                                                    </div>
+                                                                </div>
+                                                                @if($canManageStudentSubjects)
+                                                                    <form action="{{ route('student.subjects.restore', $removedCourse->id) }}" method="POST">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                                                            <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                                                        </button>
+                                                                    </form>
+                                                                @endif
+                                                            </div>
+                                                        @empty
+                                                            <p class="text-muted mb-0">No removed subjects.</p>
+                                                        @endforelse
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>

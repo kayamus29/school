@@ -11,16 +11,19 @@ use App\Models\SchoolSession;
 use App\Models\Semester;
 use Exception;
 use App\Interfaces\WalletServiceInterface;
+use App\Services\StudentLedgerSyncService;
 use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
     protected $walletService;
+    protected $studentLedgerSyncService;
 
-    public function __construct(WalletServiceInterface $walletService)
+    public function __construct(WalletServiceInterface $walletService, StudentLedgerSyncService $studentLedgerSyncService)
     {
         $this->middleware(['auth', 'role:Accountant|Admin']);
         $this->walletService = $walletService;
+        $this->studentLedgerSyncService = $studentLedgerSyncService;
     }
 
     public function index(Request $request)
@@ -50,7 +53,7 @@ class PaymentController extends Controller
 
     public function create()
     {
-        $students = User::where('role', 'student')->get(['id', 'first_name', 'last_name']);
+        $students = User::whereIn('role', ['student', 'Student'])->get(['id', 'first_name', 'last_name']);
         $classes = SchoolClass::all();
         $sessions = SchoolSession::all();
         $semesters = Semester::all();
@@ -85,6 +88,11 @@ class PaymentController extends Controller
             'semester_id' => 'required|exists:semesters,id',
             'remarks' => 'nullable|string|max:255',
         ]);
+
+        $semester = Semester::findOrFail($request->semester_id);
+        if ((int) $semester->session_id !== (int) $request->school_session_id) {
+            return redirect()->back()->with('error', 'Selected term does not belong to the selected session.')->withInput();
+        }
 
         try {
             DB::beginTransaction();
@@ -122,7 +130,7 @@ class PaymentController extends Controller
                 $description
             );
 
-            // No legacy fee update - strict wallet system.
+            $this->studentLedgerSyncService->syncStudent((int) $request->student_id);
 
             DB::commit();
 
@@ -135,7 +143,7 @@ class PaymentController extends Controller
 
     public function show($id)
     {
-        $payment = StudentPayment::with(['student', 'schoolClass', 'session', 'semester'])->findOrFail($id);
+        $payment = StudentPayment::with(['student', 'schoolClass', 'session', 'semester', 'transaction'])->findOrFail($id);
         return view('accounting.payments.show', compact('payment'));
     }
 

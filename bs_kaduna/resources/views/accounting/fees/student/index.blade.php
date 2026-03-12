@@ -63,7 +63,7 @@
                                             </td>
                                             <td>
                                                 @if($fee->status == 'paid')
-                                                    <span class="badge bg-success">Charged</span>
+                                                    <span class="badge bg-success">Paid</span>
                                                 @elseif($fee->status == 'partial')
                                                     <span class="badge bg-warning text-dark">Partial</span>
                                                 @else

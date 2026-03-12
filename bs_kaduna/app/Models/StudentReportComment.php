@@ -16,7 +16,12 @@ class StudentReportComment extends Model
         'semester_id',
         'session_id',
         'teacher_comment',
-        'principal_comment'
+        'principal_comment',
+        'affective_scores',
+    ];
+
+    protected $casts = [
+        'affective_scores' => 'array',
     ];
 
     public function student()

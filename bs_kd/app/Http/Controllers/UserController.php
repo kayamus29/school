@@ -15,7 +15,7 @@ use App\Interfaces\SchoolSessionInterface;
 use App\Repositories\StudentParentInfoRepository;
 use App\Models\AssignedTeacher;
 use App\Models\Course;
-use App\Models\StudentCourseExemption;
+use App\Models\StudentCourseExclusion;
 use Illuminate\Support\Facades\Auth;
 
 use App\Interfaces\WalletServiceInterface;
@@ -41,7 +41,7 @@ class UserController extends Controller
         WalletServiceInterface $walletService
     ) {
         $this->middleware(['can:view-student-list']);
-        $this->middleware(['can:edit student'])->only(['editStudent', 'updateStudent', 'removeStudentSubject', 'restoreStudentSubject']);
+        $this->middleware(['can:edit student'])->only(['editStudent', 'updateStudent']);
         $this->middleware(['role:Admin'])->only(['showExportForm', 'exportStudents']);
 
         $this->userRepository = $userRepository;
@@ -218,152 +218,47 @@ class UserController extends Controller
         $current_school_session_id = $this->getSchoolCurrentSession();
         $promotion_info = $this->promotionRepository->getPromotionInfoById($current_school_session_id, $id);
         $walletBalance = $this->walletService->getBalance($id);
-        $class_courses = collect();
-        $exempted_course_ids = collect();
-        $can_manage_subject_exemptions = false;
+        $allCourses = collect();
+        $activeCourses = collect();
+        $removedCourses = collect();
+        $canManageStudentSubjects = false;
 
         if ($promotion_info) {
-            $class_courses = Course::where('class_id', $promotion_info->class_id)
+            $allCourses = Course::where('class_id', $promotion_info->class_id)
                 ->where('session_id', $current_school_session_id)
                 ->orderBy('course_name')
                 ->get();
 
-            $exempted_course_ids = StudentCourseExemption::where('session_id', $current_school_session_id)
+            $removedCourseIds = StudentCourseExclusion::excludedCourseIdsForStudent($id, $current_school_session_id);
+            $activeCourses = $allCourses->reject(fn ($course) => in_array((int) $course->id, $removedCourseIds, true))->values();
+            $removedCourses = StudentCourseExclusion::with(['course', 'remover'])
                 ->where('student_id', $id)
-                ->pluck('course_id');
+                ->where('session_id', $current_school_session_id)
+                ->get();
+        }
 
-            $can_manage_subject_exemptions = $this->canManageStudentSubjectExemptions(
-                (int) $promotion_info->class_id,
-                (int) $promotion_info->section_id,
-                (int) $current_school_session_id
-            );
+        if (Auth::user()->hasRole('Admin')) {
+            $canManageStudentSubjects = true;
+        } elseif ($promotion_info && Auth::user()->hasRole('Teacher')) {
+            $canManageStudentSubjects = AssignedTeacher::query()
+                ->where('teacher_id', Auth::id())
+                ->where('session_id', $current_school_session_id)
+                ->where('class_id', $promotion_info->class_id)
+                ->where('section_id', $promotion_info->section_id)
+                ->whereNull('course_id')
+                ->exists();
         }
 
         $data = [
             'student' => $student,
             'promotion_info' => $promotion_info,
             'walletBalance' => $walletBalance,
-            'class_courses' => $class_courses,
-            'exempted_course_ids' => $exempted_course_ids,
-            'can_manage_subject_exemptions' => $can_manage_subject_exemptions,
+            'activeCourses' => $activeCourses,
+            'removedCourses' => $removedCourses,
+            'canManageStudentSubjects' => $canManageStudentSubjects,
         ];
 
         return view('students.profile', $data);
-    }
-
-    public function removeStudentSubject(Request $request, $id)
-    {
-        $validated = $request->validate([
-            'course_id' => 'required|integer|exists:courses,id',
-            'reason' => 'nullable|string|max:255',
-        ]);
-
-        $current_school_session_id = $this->getSchoolCurrentSession();
-        $promotion_info = $this->promotionRepository->getPromotionInfoById($current_school_session_id, $id);
-
-        if (!$promotion_info) {
-            return back()->withError('Student is not enrolled in the current session.');
-        }
-
-        if (
-            !$this->canManageStudentSubjectExemptions(
-                (int) $promotion_info->class_id,
-                (int) $promotion_info->section_id,
-                (int) $current_school_session_id
-            )
-        ) {
-            abort(403, 'Only the assigned class teacher or admin can remove subjects for this student.');
-        }
-
-        $course = Course::where('id', $validated['course_id'])
-            ->where('class_id', $promotion_info->class_id)
-            ->where('session_id', $current_school_session_id)
-            ->first();
-
-        if (!$course) {
-            return back()->withError('Selected subject is not assigned to the student class in this session.');
-        }
-
-        StudentCourseExemption::firstOrCreate(
-            [
-                'session_id' => $current_school_session_id,
-                'student_id' => $id,
-                'course_id' => $course->id,
-            ],
-            [
-                'reason' => $validated['reason'] ?? null,
-                'removed_by' => Auth::id(),
-            ]
-        );
-
-        return back()->with('status', "Subject '{$course->course_name}' removed for this student.");
-    }
-
-    public function restoreStudentSubject(Request $request, $id)
-    {
-        $validated = $request->validate([
-            'course_id' => 'required|integer|exists:courses,id',
-        ]);
-
-        $current_school_session_id = $this->getSchoolCurrentSession();
-        $promotion_info = $this->promotionRepository->getPromotionInfoById($current_school_session_id, $id);
-
-        if (!$promotion_info) {
-            return back()->withError('Student is not enrolled in the current session.');
-        }
-
-        if (
-            !$this->canManageStudentSubjectExemptions(
-                (int) $promotion_info->class_id,
-                (int) $promotion_info->section_id,
-                (int) $current_school_session_id
-            )
-        ) {
-            abort(403, 'Only the assigned class teacher or admin can restore subjects for this student.');
-        }
-
-        $course = Course::where('id', $validated['course_id'])
-            ->where('class_id', $promotion_info->class_id)
-            ->where('session_id', $current_school_session_id)
-            ->first();
-
-        if (!$course) {
-            return back()->withError('Selected subject is not assigned to the student class in this session.');
-        }
-
-        StudentCourseExemption::where('session_id', $current_school_session_id)
-            ->where('student_id', $id)
-            ->where('course_id', $course->id)
-            ->delete();
-
-        return back()->with('status', "Subject '{$course->course_name}' restored for this student.");
-    }
-
-    private function canManageStudentSubjectExemptions(int $classId, int $sectionId, int $sessionId): bool
-    {
-        $user = Auth::user();
-
-        if (!$user) {
-            return false;
-        }
-
-        if ($user->hasRole('Admin')) {
-            return true;
-        }
-
-        if (!$user->hasRole('Teacher')) {
-            return false;
-        }
-
-        return AssignedTeacher::where('teacher_id', $user->id)
-            ->where('session_id', $sessionId)
-            ->where('class_id', $classId)
-            ->whereNull('course_id')
-            ->where(function ($query) use ($sectionId) {
-                $query->whereNull('section_id')
-                    ->orWhere('section_id', $sectionId);
-            })
-            ->exists();
     }
 
     public function showTeacherProfile($id)

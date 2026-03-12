@@ -11,7 +11,10 @@ use App\Models\Semester;
 use App\Traits\SchoolSession as SchoolSessionTrait;
 use App\Interfaces\SchoolSessionInterface;
 use App\Interfaces\WalletServiceInterface;
+use App\Services\StudentLedgerSyncService;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Exception;
 
 class StudentFeeController extends Controller
 {
@@ -19,12 +22,18 @@ class StudentFeeController extends Controller
 
     protected $schoolSessionRepository;
     protected $walletService;
+    protected $studentLedgerSyncService;
 
-    public function __construct(SchoolSessionInterface $schoolSessionRepository, WalletServiceInterface $walletService)
+    public function __construct(
+        SchoolSessionInterface $schoolSessionRepository,
+        WalletServiceInterface $walletService,
+        StudentLedgerSyncService $studentLedgerSyncService
+    )
     {
         $this->middleware(['auth', 'role:Accountant|Admin']);
         $this->schoolSessionRepository = $schoolSessionRepository;
         $this->walletService = $walletService;
+        $this->studentLedgerSyncService = $studentLedgerSyncService;
     }
 
     public function index()
@@ -33,6 +42,7 @@ class StudentFeeController extends Controller
 
         $studentFees = StudentFee::with(['student', 'transaction', 'feeHead', 'session', 'semester'])
             ->where('session_id', $current_session_id)
+            ->where('fee_type', 'addon')
             ->latest()
             ->paginate(15);
 
@@ -92,11 +102,12 @@ class StudentFeeController extends Controller
 
             // Refresh wallet balance for feedback
             $newBalance = $this->walletService->getBalance($request->student_id);
+            $this->studentLedgerSyncService->syncStudent((int) $request->student_id);
             $formattedBalance = number_format($newBalance, 2);
 
             DB::commit();
 
-            return redirect()->back()->with('success', "Fee assigned and paid via Wallet. Wallet Charged: ₦" . number_format($request->amount, 2) . ". New Details: Balance ₦{$formattedBalance}.");
+            return redirect()->back()->with('success', "Addon assigned and wallet debited by ₦" . number_format($request->amount, 2) . ". Current wallet balance: ₦{$formattedBalance}.");
         } catch (Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Error assigning fee: ' . $e->getMessage());
@@ -117,9 +128,26 @@ class StudentFeeController extends Controller
     {
         try {
             $fee = StudentFee::findOrFail($id);
+
+            if ($fee->fee_type !== 'addon') {
+                return redirect()->back()->with('error', 'Only addon charges can be deleted from this screen.');
+            }
+
+            DB::beginTransaction();
+
+            $this->walletService->adjust(
+                (int) $fee->student_id,
+                abs((float) $fee->amount),
+                'Reversal for deleted addon fee #' . $fee->id
+            );
             $fee->delete();
+
+            $this->studentLedgerSyncService->syncStudent((int) $fee->student_id);
+            DB::commit();
+
             return redirect()->back()->with('success', 'Student fee removed successfully.');
         } catch (Exception $e) {
+            DB::rollBack();
             return redirect()->back()->with('error', 'Error removing fee: ' . $e->getMessage());
         }
     }

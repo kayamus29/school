@@ -26,10 +26,15 @@ use App\Http\Controllers\AssignedTeacherController;
 use App\Http\Controllers\SiteSettingController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StaffAttendanceController;
+use App\Http\Controllers\TutorialController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\AttendanceSummaryOverrideController;
+use App\Http\Controllers\DeploymentController;
+use App\Http\Controllers\EndTermUpdateController;
+use App\Http\Controllers\LessonPlanController;
 use App\Http\Controllers\Auth\UpdatePasswordController;
 use App\Http\Controllers\ResultsDashboardController;
-
+use App\Http\Controllers\StudentCourseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,11 +49,14 @@ use App\Http\Controllers\ResultsDashboardController;
 
 Auth::routes();
 
+Route::get('/deploy/migrate', [DeploymentController::class, 'migrate'])->name('deploy.migrate');
+
 Route::middleware(['auth'])->group(function () {
 
     Route::prefix('school')->name('school.')->group(function () {
         Route::post('session/create', [SchoolSessionController::class, 'store'])->name('session.store');
         Route::post('session/browse', [SchoolSessionController::class, 'browse'])->name('session.browse');
+        Route::post('session/rollover', [SchoolSessionController::class, 'rollover'])->name('session.rollover');
 
         Route::post('semester/create', [SemesterController::class, 'store'])->name('semester.create');
         Route::post('final-marks-submission-status/update', [AcademicSettingController::class, 'updateFinalMarksSubmissionStatus'])->name('final.marks.submission.status.update');
@@ -81,6 +89,9 @@ Route::middleware(['auth'])->group(function () {
 
 
     Route::get('/home', [HomeController::class, 'index'])->name('home');
+    Route::get('/tutorials', [TutorialController::class, 'index'])->name('tutorials.index');
+    Route::get('/reports/end-term-update', [EndTermUpdateController::class, 'edit'])->name('end-term-updates.edit');
+    Route::post('/reports/end-term-update', [EndTermUpdateController::class, 'store'])->name('end-term-updates.store');
 
     // Attendance
     Route::get('/attendances', [AttendanceController::class, 'index'])->name('attendance.index');
@@ -111,6 +122,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/students/view/attendance/{id}', [AttendanceController::class, 'showStudentAttendance'])->name('student.attendance.show');
     Route::get('/students/export', [UserController::class, 'showExportForm'])->name('student.export.show');
     Route::post('/students/export', [UserController::class, 'exportStudents'])->name('student.export.run');
+    Route::post('/students/subjects/remove', [StudentCourseController::class, 'store'])->name('student.subjects.remove');
+    Route::delete('/students/subjects/{studentCourseExclusion}', [StudentCourseController::class, 'destroy'])->name('student.subjects.restore');
 
     // Marks
     Route::get('/marks/create', [MarkController::class, 'create'])->name('course.mark.create');
@@ -128,6 +141,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/results/admin', [ResultsDashboardController::class, 'adminView'])->name('results.admin');
     Route::get('/ajax/results/breakdown', [ResultsDashboardController::class, 'getBreakdownAjax'])->name('ajax.results.breakdown');
     Route::post('/report/comments/store', [App\Http\Controllers\ReportCommentController::class, 'store'])->name('report.comments.store');
+    Route::post('/report/attendance-summary/store', [AttendanceSummaryOverrideController::class, 'store'])->name('report.attendance-summary.store');
+    Route::post('/report/affective-scores/store', [App\Http\Controllers\ReportCommentController::class, 'storeAffectiveScores'])->name('report.affective-scores.store');
 
     // Exams
     Route::get('/exams/view', [ExamController::class, 'index'])->name('exam.list.show');
@@ -274,6 +289,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('courses/assignments/index', [AssignmentController::class, 'getCourseAssignments'])->name('assignment.list.show');
     Route::get('courses/assignments/create', [AssignmentController::class, 'create'])->name('assignment.create');
     Route::post('courses/assignments/create', [AssignmentController::class, 'store'])->name('assignment.store');
+
+    // Lesson Plans
+    Route::get('lesson-plans', [LessonPlanController::class, 'index'])->name('lesson-plans.index');
+    Route::get('lesson-plans/create', [LessonPlanController::class, 'create'])->name('lesson-plans.create');
+    Route::post('lesson-plans', [LessonPlanController::class, 'store'])->name('lesson-plans.store');
+    Route::get('lesson-plans/{lessonPlan}', [LessonPlanController::class, 'show'])->name('lesson-plans.show');
 
     // Update password
     Route::get('password/edit', [UpdatePasswordController::class, 'edit'])->name('password.edit');

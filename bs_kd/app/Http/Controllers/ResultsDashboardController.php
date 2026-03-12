@@ -10,14 +10,17 @@ use App\Models\Section;
 use App\Models\Course;
 use App\Models\Semester;
 use App\Models\AssignedTeacher;
+use App\Models\Attendance;
+use App\Models\AttendanceSummaryOverride;
 use App\Models\Promotion;
-use App\Models\StudentCourseExemption;
 use App\Models\User;
+use App\Models\EndTermUpdate;
 use App\Traits\SchoolSession;
 use App\Interfaces\SchoolSessionInterface;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
-use Exception;
+use App\Models\StudentCourseExclusion;
 
 class ResultsDashboardController extends Controller
 {
@@ -29,25 +32,6 @@ class ResultsDashboardController extends Controller
     {
         $this->middleware(['auth']);
         $this->schoolSessionRepository = $schoolSessionRepository;
-    }
-
-    private function getExemptedCourseIds(int $studentId, int $sessionId)
-    {
-        return StudentCourseExemption::where('session_id', $sessionId)
-            ->where('student_id', $studentId)
-            ->pluck('course_id');
-    }
-
-    private function getSessionCoursesForStudent(Promotion $promotion)
-    {
-        $exemptedCourseIds = $this->getExemptedCourseIds((int) $promotion->student_id, (int) $promotion->session_id);
-
-        return Course::where('class_id', $promotion->class_id)
-            ->where('session_id', $promotion->session_id)
-            ->when($exemptedCourseIds->isNotEmpty(), function ($query) use ($exemptedCourseIds) {
-                $query->whereNotIn('id', $exemptedCourseIds);
-            })
-            ->get();
     }
 
     /**
@@ -102,19 +86,15 @@ class ResultsDashboardController extends Controller
             }
 
             // Get students in this section
-            $exemptedStudentIds = StudentCourseExemption::where('session_id', $session_id)
-                ->where('course_id', $course_id)
-                ->pluck('student_id');
-
             $students = Promotion::with('student')
                 ->where('class_id', $class_id)
                 ->where('section_id', $section_id)
                 ->where('session_id', $session_id)
-                ->when($exemptedStudentIds->isNotEmpty(), function ($query) use ($exemptedStudentIds) {
-                    $query->whereNotIn('student_id', $exemptedStudentIds);
-                })
                 ->get()
                 ->pluck('student');
+
+            $allowedStudentIds = StudentCourseExclusion::filterStudentIdsForCourse($students->pluck('id'), (int) $course_id, (int) $session_id);
+            $students = $students->whereIn('id', $allowedStudentIds)->values();
 
             // Fetch all final marks for these students in this course across all semesters
             $results = FinalMark::where('course_id', $course_id)
@@ -145,13 +125,18 @@ class ResultsDashboardController extends Controller
         $sections = AssignedTeacher::with(['schoolClass', 'section'])
             ->where('teacher_id', $user->id)
             ->where('session_id', $session_id)
-            ->whereNull('course_id')
-            ->get();
+            ->sectionLeadership()
+            ->get()
+            ->unique(fn ($assignment) => $assignment->class_id . '-' . $assignment->section_id)
+            ->values();
 
         $students = [];
         $selectedStudent = null;
+        $selectedPromotion = null;
         $results = [];
         $courses = [];
+        $attendanceSummaries = collect();
+        $canOverrideAttendanceSummary = false;
         $semesters = Semester::where('session_id', $session_id)->orderBy('id')->get();
 
         if ($section_id) {
@@ -175,15 +160,18 @@ class ResultsDashboardController extends Controller
                 if ($selectedStudent) {
                     $promotion = Promotion::where('student_id', $student_id)
                         ->where('session_id', $session_id)
-                        ->with(['schoolClass.courses'])
+                        ->with(['schoolClass.courses', 'section', 'session'])
                         ->first();
 
                     if ($promotion) {
-                        $courses = $this->getSessionCoursesForStudent($promotion);
+                        $selectedPromotion = $promotion;
+                        $courses = StudentCourseExclusion::filterCoursesForStudent($promotion->schoolClass->courses, (int) $student_id, (int) $session_id);
                         $results = FinalMark::where('student_id', $student_id)
                             ->where('session_id', $session_id)
                             ->get()
                             ->groupBy('course_id');
+                        $attendanceSummaries = $this->buildAttendanceSummaries($student_id, $session_id, $semesters, $promotion);
+                        $canOverrideAttendanceSummary = $user->hasRole('Teacher') && $sections->where('section_id', $promotion->section_id)->isNotEmpty();
 
                         $comments = \App\Models\StudentReportComment::where('student_id', $student_id)
                             ->where('session_id', $session_id)
@@ -195,8 +183,11 @@ class ResultsDashboardController extends Controller
         }
 
         $comments = $comments ?? collect();
+        $endTermUpdates = Schema::hasTable('end_term_updates')
+            ? EndTermUpdate::where('session_id', $session_id)->get()->keyBy('semester_id')
+            : collect();
 
-        return view('results.section', compact('sections', 'students', 'selectedStudent', 'results', 'courses', 'semesters', 'section_id', 'student_id', 'comments'));
+        return view('results.section', compact('sections', 'students', 'selectedStudent', 'selectedPromotion', 'results', 'courses', 'semesters', 'section_id', 'student_id', 'comments', 'attendanceSummaries', 'canOverrideAttendanceSummary', 'endTermUpdates'));
     }
 
     /**
@@ -215,7 +206,7 @@ class ResultsDashboardController extends Controller
         // Get all courses student is registered in (via Promotion -> Class -> Courses)
         $promotion = Promotion::where('student_id', $student->id)
             ->where('session_id', $session_id)
-            ->with(['schoolClass.courses'])
+            ->with(['schoolClass.courses', 'section', 'session'])
             ->first();
 
         if (!$promotion) {
@@ -233,7 +224,7 @@ class ResultsDashboardController extends Controller
             return view('results.student', compact('student', 'session_id', 'semesters', 'withheld', 'promotion'));
         }
 
-        $courses = $this->getSessionCoursesForStudent($promotion);
+        $courses = StudentCourseExclusion::filterCoursesForStudent($promotion->schoolClass->courses, (int) $student->id, (int) $session_id);
 
         // 1. Fetch Final Marks (Official)
         $finalResults = FinalMark::where('student_id', $student->id)
@@ -299,8 +290,12 @@ class ResultsDashboardController extends Controller
             ->where('session_id', $session_id)
             ->get()
             ->keyBy('semester_id');
+        $attendanceSummaries = $this->buildAttendanceSummaries($student->id, $session_id, $semesters, $promotion);
+        $endTermUpdates = Schema::hasTable('end_term_updates')
+            ? EndTermUpdate::where('session_id', $session_id)->get()->keyBy('semester_id')
+            : collect();
 
-        return view('results.student', compact('student', 'semesters', 'courses', 'results', 'promotion', 'comments'));
+        return view('results.student', compact('student', 'semesters', 'courses', 'results', 'promotion', 'comments', 'attendanceSummaries', 'endTermUpdates'));
     }
 
     /**
@@ -315,23 +310,26 @@ class ResultsDashboardController extends Controller
         $session_id = $this->getSchoolCurrentSession();
         $student_id = $request->query('student_id');
         $student = null;
+        $promotion = null;
         $results = [];
         $courses = [];
+        $attendanceSummaries = collect();
         $semesters = Semester::where('session_id', $session_id)->orderBy('id')->get();
 
         if ($student_id) {
             $student = User::find($student_id);
             $promotion = Promotion::where('student_id', $student_id)
                 ->where('session_id', $session_id)
-                ->with(['schoolClass.courses'])
+                ->with(['schoolClass.courses', 'section', 'session'])
                 ->first();
 
             if ($promotion) {
-                $courses = $this->getSessionCoursesForStudent($promotion);
+                $courses = StudentCourseExclusion::filterCoursesForStudent($promotion->schoolClass->courses, (int) $student_id, (int) $session_id);
                 $results = FinalMark::where('student_id', $student_id)
                     ->where('session_id', $session_id)
                     ->get()
                     ->groupBy('course_id');
+                $attendanceSummaries = $this->buildAttendanceSummaries($student_id, $session_id, $semesters, $promotion);
 
                 $comments = \App\Models\StudentReportComment::where('student_id', $student_id)
                     ->where('session_id', $session_id)
@@ -342,8 +340,11 @@ class ResultsDashboardController extends Controller
 
         $allStudents = User::role('Student')->get();
         $comments = $comments ?? collect();
+        $endTermUpdates = Schema::hasTable('end_term_updates')
+            ? EndTermUpdate::where('session_id', $session_id)->get()->keyBy('semester_id')
+            : collect();
 
-        return view('results.admin', compact('student', 'results', 'courses', 'semesters', 'allStudents', 'comments'));
+        return view('results.admin', compact('student', 'promotion', 'results', 'courses', 'semesters', 'allStudents', 'comments', 'attendanceSummaries', 'endTermUpdates'));
     }
 
     /**
@@ -358,6 +359,14 @@ class ResultsDashboardController extends Controller
         ]);
 
         $session_id = $this->getSchoolCurrentSession();
+
+        if (in_array((int) $request->course_id, StudentCourseExclusion::excludedCourseIdsForStudent((int) $request->student_id, (int) $session_id), true)) {
+            return response()->json([
+                'success' => true,
+                'assessments' => [],
+                'summary' => null,
+            ]);
+        }
 
         $marks = Mark::with('exam')
             ->where('student_id', $request->student_id)
@@ -424,7 +433,7 @@ class ResultsDashboardController extends Controller
             ]);
         }
 
-        $courses = $this->getSessionCoursesForStudent($promotion);
+        $courses = StudentCourseExclusion::filterCoursesForStudent($promotion->schoolClass->courses, (int) $student->id, (int) $session_id);
 
         // Fetch all final marks for this student
         $results = FinalMark::where('student_id', $student->id)
@@ -441,5 +450,42 @@ class ResultsDashboardController extends Controller
             'promotion' => $promotion,
             'withheld' => false,
         ]);
+    }
+
+    private function buildAttendanceSummaries(int $studentId, int $sessionId, $semesters, Promotion $promotion)
+    {
+        $overrides = AttendanceSummaryOverride::where('student_id', $studentId)
+            ->where('session_id', $sessionId)
+            ->get()
+            ->keyBy('semester_id');
+
+        return $semesters->mapWithKeys(function ($semester) use ($studentId, $sessionId, $promotion, $overrides) {
+            $daysPresent = Attendance::query()
+                ->where('student_id', $studentId)
+                ->where('session_id', $sessionId)
+                ->where('class_id', $promotion->class_id)
+                ->where('section_id', $promotion->section_id)
+                ->where('status', 'on')
+                ->whereBetween('created_at', [$semester->start_date, $semester->end_date])
+                ->get()
+                ->groupBy(fn ($attendance) => optional($attendance->created_at)->format('Y-m-d'))
+                ->count();
+
+            $override = $overrides->get($semester->id);
+
+            return [
+                $semester->id => [
+                    'total_school_days' => (int) ($semester->total_school_days ?? 0),
+                    'calculated_days_present' => $daysPresent,
+                    'days_present' => $override ? (int) $override->days_present : $daysPresent,
+                    'is_overridden' => (bool) $override,
+                    'override_note' => $override->note ?? null,
+                    'override_updated_by' => $override->updated_by ?? null,
+                    'attendance_percentage' => ((int) ($semester->total_school_days ?? 0) > 0)
+                        ? round((($override ? (int) $override->days_present : $daysPresent) / (int) $semester->total_school_days) * 100, 1)
+                        : null,
+                ],
+            ];
+        });
     }
 }

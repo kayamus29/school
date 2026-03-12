@@ -30,10 +30,14 @@ class AccountingDashboardController extends Controller
         }
 
         // 1. Total Enrolled Students
-        $totalStudents = User::where('role', 'student')->count();
+        $totalStudents = User::whereIn('role', ['student', 'Student'])->count();
         // Students with at least one transaction in current session tags (this is tricky with wallet, 
         // effectively we just show active students in the system)
-        $activePayingStudents = User::where('role', 'student')->count();
+        $activePayingStudents = User::whereIn('role', ['student', 'Student'])
+            ->whereHas('promotions', function ($q) use ($session) {
+                $q->where('session_id', $session->id);
+            })
+            ->count();
 
         // 2. Revenue (Cashflow) = Sum of Payments
         // "Revenue = SUM(student_payments)"
@@ -41,14 +45,18 @@ class AccountingDashboardController extends Controller
 
         // 3. Expected Revenue (Billed) = Sum of Fees
         // "Fees explain why... not authority" - still useful for "Expected" metric
-        $totalExpectedFees = StudentFee::where('session_id', $session->id)->sum('amount');
+        $totalExpectedFees = StudentFee::where('session_id', $session->id)
+            ->whereNull('transferred_to_id')
+            ->sum('amount');
 
         // 4. Wallet Statistics (Source of Truth)
         // Receivables = SUM(Negative Balances) => Debt
         // Liabilities = SUM(Positive Balances) => Credit (Prepaid)
 
-        $totalReceivables = DB::table('wallets')->where('balance', '<', 0)->sum('balance'); // Returns negative sum, e.g -50000
-        $totalLiabilities = DB::table('wallets')->where('balance', '>', 0)->sum('balance'); // Returns positive sum, e.g +20000
+        $totalReceivables = -1 * StudentFee::where('session_id', $session->id)
+            ->whereNull('transferred_to_id')
+            ->sum('balance');
+        $totalLiabilities = DB::table('wallets')->where('balance', '>', 0)->sum('balance');
 
         // Display positive for dashboard readability? Usually reports show "Receivables: $50k" (meaning people owe us)
         // Let's pass the absolute value for "Receivables" display, or keep it negative to indicate "Asset/Debt"?
@@ -58,14 +66,21 @@ class AccountingDashboardController extends Controller
         // "Receivables = SUM(negative wallet balances)" -> This is strictly correct value-wise.
 
         // 5. Expenses
-        $totalExpenses = Expense::sum('amount');
+        $totalExpenses = Expense::whereIn('status', ['approved', 'corrected'])->sum('amount');
 
         // 6. Net Profit/Loss (Cash Basis) = Received - Expenses
         $netBalance = $totalReceived - $totalExpenses;
 
         // 7. Recent Transactions
-        $recentPayments = StudentPayment::with(['student', 'schoolClass'])->latest()->take(5)->get();
-        $recentExpenses = Expense::latest()->take(5)->get();
+        $recentPayments = StudentPayment::with(['student', 'schoolClass'])
+            ->where('school_session_id', $session->id)
+            ->latest()
+            ->take(5)
+            ->get();
+        $recentExpenses = Expense::whereIn('status', ['approved', 'corrected'])
+            ->latest('expense_date')
+            ->take(5)
+            ->get();
 
         return view('accounting.dashboard', compact(
             'totalStudents',
@@ -85,7 +100,9 @@ class AccountingDashboardController extends Controller
         $search = $request->input('search');
 
         // Query students with negative wallet balance (meaning they owe money)
-        $query = User::role('student')
+        $query = User::where(function ($q) {
+            $q->role('Student')->orWhereIn('role', ['student', 'Student']);
+        })
             ->whereHas('wallet', function ($q) {
                 $q->where('balance', '<', 0);
             })

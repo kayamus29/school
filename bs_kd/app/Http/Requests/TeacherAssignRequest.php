@@ -24,12 +24,13 @@ class TeacherAssignRequest extends FormRequest
     public function rules()
     {
         return [
-            'course_id'             => 'required|integer',
+            'course_id'             => 'nullable|integer',
             'semester_id'           => 'required|integer',
             'class_id'              => 'required|integer',
             'section_id'            => 'required|integer',
             'teacher_id'            => 'required|integer',
             'session_id'            => 'required|integer',
+            'assignment_role'       => 'required|in:subject_teacher,section_teacher,class_supervisor',
         ];
     }
 }
