@@ -1,0 +1,2 @@
+[30-Jan-2026 03:29:22 UTC] PHP Fatal error:  Declaration of App\Repositories\ExamRepository::getAll($session_id, $semester_id, $class_id, $course_id) must be compatible with App\Interfaces\ExamInterface::getAll($session_id, $semester_id, $class_id) in /home/mienebis/schools/bs_kaduna/app/Repositories/ExamRepository.php on line 30
+[06-Feb-2026 19:12:44 UTC] PHP Parse error:  syntax error, unexpected end of file, expecting variable or "${" or "{$" in /home/mienebis/schools/bs_kaduna/public/test.php on line 2

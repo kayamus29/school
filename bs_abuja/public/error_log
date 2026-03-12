@@ -1,0 +1,28 @@
+[23-Jan-2026 07:19:42 UTC] PHP Warning:  require(/home/mienebis/schools/bs_abuja/vendor/composer/../symfony/var-dumper/Resources/functions/dump.php): Failed to open stream: No such file or directory in /home/mienebis/schools/bs_abuja/vendor/composer/autoload_real.php on line 41
+[23-Jan-2026 07:19:42 UTC] PHP Warning:  require(/home/mienebis/schools/bs_abuja/vendor/composer/../symfony/var-dumper/Resources/functions/dump.php): Failed to open stream: No such file or directory in /home/mienebis/schools/bs_abuja/vendor/composer/autoload_real.php on line 41
+[23-Jan-2026 07:19:42 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/mienebis/schools/bs_abuja/vendor/composer/../symfony/var-dumper/Resources/functions/dump.php' (include_path='.:/opt/cpanel/ea-php81/root/usr/share/pear') in /home/mienebis/schools/bs_abuja/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/mienebis/schools/bs_abuja/vendor/composer/autoload_real.php(45): {closure}('667aeda72477189...', '/home/mienebis/...')
+#1 /home/mienebis/schools/bs_abuja/vendor/autoload.php(22): ComposerAutoloaderInit2248b01bf82defe3a2fad85587c47c87::getLoader()
+#2 /home/mienebis/schools/bs_abuja/public/index.php(34): require('/home/mienebis/...')
+#3 {main}
+  thrown in /home/mienebis/schools/bs_abuja/vendor/composer/autoload_real.php on line 41
+[23-Jan-2026 07:26:29 UTC] PHP Warning:  require(/home/mienebis/schools/bs_abuja/vendor/composer/../symfony/var-dumper/Resources/functions/dump.php): Failed to open stream: No such file or directory in /home/mienebis/schools/bs_abuja/vendor/composer/autoload_real.php on line 41
+[23-Jan-2026 07:26:29 UTC] PHP Warning:  require(/home/mienebis/schools/bs_abuja/vendor/composer/../symfony/var-dumper/Resources/functions/dump.php): Failed to open stream: No such file or directory in /home/mienebis/schools/bs_abuja/vendor/composer/autoload_real.php on line 41
+[23-Jan-2026 07:26:29 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/mienebis/schools/bs_abuja/vendor/composer/../symfony/var-dumper/Resources/functions/dump.php' (include_path='.:/opt/cpanel/ea-php81/root/usr/share/pear') in /home/mienebis/schools/bs_abuja/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/mienebis/schools/bs_abuja/vendor/composer/autoload_real.php(45): {closure}('667aeda72477189...', '/home/mienebis/...')
+#1 /home/mienebis/schools/bs_abuja/vendor/autoload.php(22): ComposerAutoloaderInit2248b01bf82defe3a2fad85587c47c87::getLoader()
+#2 /home/mienebis/schools/bs_abuja/public/index.php(34): require('/home/mienebis/...')
+#3 {main}
+  thrown in /home/mienebis/schools/bs_abuja/vendor/composer/autoload_real.php on line 41
+[23-Jan-2026 07:29:02 UTC] PHP Warning:  require(/home/mienebis/schools/bs_abuja/vendor/composer/../symfony/var-dumper/Resources/functions/dump.php): Failed to open stream: No such file or directory in /home/mienebis/schools/bs_abuja/vendor/composer/autoload_real.php on line 41
+[23-Jan-2026 07:29:02 UTC] PHP Warning:  require(/home/mienebis/schools/bs_abuja/vendor/composer/../symfony/var-dumper/Resources/functions/dump.php): Failed to open stream: No such file or directory in /home/mienebis/schools/bs_abuja/vendor/composer/autoload_real.php on line 41
+[23-Jan-2026 07:29:02 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/mienebis/schools/bs_abuja/vendor/composer/../symfony/var-dumper/Resources/functions/dump.php' (include_path='.:/opt/cpanel/ea-php81/root/usr/share/pear') in /home/mienebis/schools/bs_abuja/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/mienebis/schools/bs_abuja/vendor/composer/autoload_real.php(45): {closure}('667aeda72477189...', '/home/mienebis/...')
+#1 /home/mienebis/schools/bs_abuja/vendor/autoload.php(22): ComposerAutoloaderInit2248b01bf82defe3a2fad85587c47c87::getLoader()
+#2 /home/mienebis/schools/bs_abuja/public/index.php(34): require('/home/mienebis/...')
+#3 {main}
+  thrown in /home/mienebis/schools/bs_abuja/vendor/composer/autoload_real.php on line 41
+[01-Feb-2026 18:49:11 UTC] PHP Parse error:  syntax error, unexpected end of file, expecting variable or "${" or "{$" in /home/mienebis/schools/bs_abuja/public/test.php on line 2

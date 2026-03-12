@@ -1,0 +1,106 @@
+/* Results Dashboard High-Precision Grid */
+
+.results-grid {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+}
+
+.results-grid thead th {
+    position: sticky;
+    top: 0;
+    background: #f8f9fa;
+    z-index: 10;
+    border-bottom: 2px solid #dee2e6;
+    padding: 12px 8px;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: #495057;
+    font-weight: 700;
+}
+
+.results-grid tbody td {
+    padding: 12px 8px;
+    border-bottom: 1px solid #edf2f7;
+    font-size: 0.9rem;
+    vertical-align: middle;
+}
+
+.results-row:hover {
+    background-color: #f1f5f9;
+}
+
+/* Color Coding */
+.mark-fail {
+    color: #dc3545;
+    font-weight: 700;
+}
+
+.mark-pass {
+    color: #198754;
+    font-weight: 700;
+}
+
+.mark-top {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border-radius: 4px;
+    padding: 2px 6px;
+}
+
+/* Indicators */
+.grade-badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.indicator-dot {
+    height: 8px;
+    width: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 992px) {
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .results-grid {
+        border: 1px solid #000;
+    }
+
+    .results-grid thead th {
+        background: #eee !important;
+        color: #000 !important;
+    }
+}
+
+/* Tooltip & Interaction */
+.clickable-mark {
+    cursor: pointer;
+    text-decoration: underline dotted;
+    text-underline-offset: 4px;
+}
+
+.clickable-mark:hover {
+    color: #0d6efd;
+}
+
+.cumulative-total {
+    background: #eef2ff;
+    font-weight: 800;
+    color: #4338ca;
+}

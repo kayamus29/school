@@ -1,0 +1,5 @@
+User: wmiller@example.com
+Role: Teacher
+Check 'view assigned students': TRUE
+Check 'view-student-list': TRUE
+Check 'view-attendance-pages': TRUE
