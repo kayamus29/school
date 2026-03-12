@@ -81,8 +81,16 @@
                                 @if($selectedStudent)
                                     @php
                                         $studentInitials = strtoupper(substr($selectedStudent->first_name ?? 'S', 0, 1) . substr($selectedStudent->last_name ?? 'R', 0, 1));
-                                        $schoolLogo = !empty($site_setting->school_logo_path) ? asset('storage/' . $site_setting->school_logo_path) : null;
+                                        $schoolLogoPath = $site_setting->school_logo_path ?? null;
+                                        $schoolLogo = !empty($schoolLogoPath)
+                                            ? (\Illuminate\Support\Str::startsWith($schoolLogoPath, ['http://', 'https://', '/']) ? $schoolLogoPath : asset($schoolLogoPath))
+                                            : null;
                                         $schoolName = $site_setting->school_name ?? config('app.name');
+                                        $schoolContact = collect([
+                                            $site_setting->school_address ?? null,
+                                            $site_setting->school_phone ?? null,
+                                            $site_setting->school_email ?? null,
+                                        ])->filter()->implode(' | ');
                                         $sessionName = optional(optional($selectedPromotion)->session)->session_name ?? 'Current Session';
                                         $className = optional(optional($selectedPromotion)->schoolClass)->class_name ?? 'Not Assigned';
                                         $sectionName = optional(optional($selectedPromotion)->section)->section_name ?? null;
@@ -117,7 +125,7 @@
                                                 <div class="report-school-name">{{ $schoolName }}</div>
                                                 <div class="report-school-tagline">Section Report Management</div>
                                                 <div class="report-school-contact">
-                                                    Teacher-facing report sheet for review, comments, and attendance updates.
+                                                    {{ $schoolContact ?: 'Teacher-facing report sheet for review, comments, and attendance updates.' }}
                                                 </div>
                                             </div>
                                             <div class="report-badge-box">

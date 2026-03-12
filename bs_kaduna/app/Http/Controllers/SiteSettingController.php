@@ -64,12 +64,12 @@ class SiteSettingController extends Controller
 
         if ($request->hasFile('school_logo')) {
             $path = $request->file('school_logo')->store('uploads/logos', 'public');
-            $setting->school_logo_path = asset('storage/' . $path);
+            $setting->school_logo_path = 'storage/' . $path;
         }
 
         if ($request->hasFile('login_background')) {
             $path = $request->file('login_background')->store('uploads/backgrounds', 'public');
-            $setting->login_background_path = asset('storage/' . $path);
+            $setting->login_background_path = 'storage/' . $path;
         }
 
         $setting->save();

@@ -15,6 +15,7 @@
                                 <li class="breadcrumb-item active" aria-current="page">View</li>
                             </ol>
                         </nav>
+                        @include('session-messages')
 
                         <div class="card border shadow-sm">
                             <div class="card-body">
@@ -34,6 +35,13 @@
                                     <hr>
                                     <a href="{{ asset('storage/' . $lessonPlan->file_path) }}" target="_blank" class="btn btn-outline-primary">
                                         <i class="bi bi-download"></i> Open {{ $lessonPlan->file_name ?? 'Lesson Plan File' }}
+                                    </a>
+                                @endif
+
+                                @if(Auth::user()->hasRole('Admin') || Auth::id() === $lessonPlan->teacher_id)
+                                    <hr>
+                                    <a href="{{ route('lesson-plans.edit', $lessonPlan->id) }}" class="btn btn-primary">
+                                        <i class="bi bi-pencil-square"></i> {{ Auth::user()->hasRole('Admin') ? 'Review / Correct' : 'Edit Lesson Plan' }}
                                     </a>
                                 @endif
                             </div>

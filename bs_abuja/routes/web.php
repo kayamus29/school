@@ -294,6 +294,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('lesson-plans', [LessonPlanController::class, 'index'])->name('lesson-plans.index');
     Route::get('lesson-plans/create', [LessonPlanController::class, 'create'])->name('lesson-plans.create');
     Route::post('lesson-plans', [LessonPlanController::class, 'store'])->name('lesson-plans.store');
+    Route::get('lesson-plans/{lessonPlan}/edit', [LessonPlanController::class, 'edit'])->name('lesson-plans.edit');
+    Route::put('lesson-plans/{lessonPlan}', [LessonPlanController::class, 'update'])->name('lesson-plans.update');
     Route::get('lesson-plans/{lessonPlan}', [LessonPlanController::class, 'show'])->name('lesson-plans.show');
 
     // Update password

@@ -60,6 +60,11 @@
                                                 <a href="{{ route('lesson-plans.show', $lessonPlan->id) }}" class="btn btn-sm btn-outline-primary">
                                                     <i class="bi bi-eye"></i> View
                                                 </a>
+                                                @if(Auth::user()->hasRole('Admin') || Auth::id() === $lessonPlan->teacher_id)
+                                                    <a href="{{ route('lesson-plans.edit', $lessonPlan->id) }}" class="btn btn-sm btn-outline-secondary">
+                                                        <i class="bi bi-pencil"></i> {{ Auth::user()->hasRole('Admin') ? 'Review' : 'Edit' }}
+                                                    </a>
+                                                @endif
                                             </td>
                                         </tr>
                                     @empty

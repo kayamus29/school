@@ -55,8 +55,16 @@
                 @if($student)
                     @php
                         $studentInitials = strtoupper(substr($student->first_name ?? 'S', 0, 1) . substr($student->last_name ?? 'R', 0, 1));
-                        $schoolLogo = !empty($site_setting->school_logo_path) ? asset('storage/' . $site_setting->school_logo_path) : null;
+                        $schoolLogoPath = $site_setting->school_logo_path ?? null;
+                        $schoolLogo = !empty($schoolLogoPath)
+                            ? (\Illuminate\Support\Str::startsWith($schoolLogoPath, ['http://', 'https://', '/']) ? $schoolLogoPath : asset($schoolLogoPath))
+                            : null;
                         $schoolName = $site_setting->school_name ?? config('app.name');
+                        $schoolContact = collect([
+                            $site_setting->school_address ?? null,
+                            $site_setting->school_phone ?? null,
+                            $site_setting->school_email ?? null,
+                        ])->filter()->implode(' | ');
                         $sessionName = optional(optional($promotion)->session)->session_name ?? 'Current Session';
                         $className = optional(optional($promotion)->schoolClass)->class_name ?? 'Not Assigned';
                         $sectionName = optional(optional($promotion)->section)->section_name ?? null;
@@ -91,7 +99,7 @@
                                 <div class="report-school-name">{{ $schoolName }}</div>
                                 <div class="report-school-tagline">Administrative Audit Copy</div>
                                 <div class="report-school-contact">
-                                    Full student report overview for administrative review and comment management.
+                                    {{ $schoolContact ?: 'Full student report overview for administrative review and comment management.' }}
                                 </div>
                             </div>
                             <div class="report-badge-box">

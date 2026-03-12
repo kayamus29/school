@@ -1,14 +1,46 @@
+@php
+    $isValidHex = function ($color, $default) {
+        return is_string($color) && preg_match('/^#[0-9a-fA-F]{6}$/', $color) ? $color : $default;
+    };
+
+    $lightenHex = function ($hex, $percent) {
+        $hex = ltrim($hex, '#');
+        $percent = max(0, min(1, $percent));
+
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+
+        $r = (int) round($r + (255 - $r) * $percent);
+        $g = (int) round($g + (255 - $g) * $percent);
+        $b = (int) round($b + (255 - $b) * $percent);
+
+        return sprintf('#%02x%02x%02x', $r, $g, $b);
+    };
+
+    $primaryColor = $isValidHex($site_setting->primary_color ?? null, '#0d2545');
+    $secondaryColor = $isValidHex($site_setting->secondary_color ?? null, '#c8962e');
+    if (strtolower($secondaryColor) === '#ffffff') {
+        $secondaryColor = '#c8962e';
+    }
+
+    $primarySoft = $lightenHex($primaryColor, 0.85);
+    $secondarySoft = $lightenHex($secondaryColor, 0.35);
+    $pageTint = $lightenHex($primaryColor, 0.94);
+    $cardTint = $lightenHex($secondaryColor, 0.92);
+@endphp
+
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 
     :root {
-        --report-navy: #0d2545;
-        --report-gold: #c8962e;
-        --report-gold-light: #f0d080;
-        --report-cream: #faf8f3;
+        --report-navy: {{ $primaryColor }};
+        --report-gold: {{ $secondaryColor }};
+        --report-gold-light: {{ $secondarySoft }};
+        --report-cream: {{ $pageTint }};
         --report-white: #ffffff;
-        --report-gray-light: #f4f1eb;
-        --report-gray-mid: #d6d0c4;
+        --report-gray-light: {{ $cardTint }};
+        --report-gray-mid: {{ $primarySoft }};
         --report-gray-text: #6b6453;
         --report-green: #2a7d4f;
         --report-red: #b83232;
@@ -568,6 +600,16 @@
     }
 
     @media print {
+        @page {
+            size: auto;
+            margin: 10mm;
+        }
+
+        * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
         body {
             background: #fff !important;
             padding: 0 !important;
@@ -588,7 +630,24 @@
         }
 
         .report-body {
-            background: #fff;
+            background: var(--report-cream) !important;
+        }
+
+        .report-header,
+        .report-footer,
+        .report-gold-rule,
+        .report-student-banner,
+        .report-news-card,
+        .report-next-term-card,
+        .report-table thead tr,
+        .report-pill,
+        .report-att-box,
+        .report-psycho-item,
+        .report-comment-box,
+        .report-block,
+        .report-table-wrap,
+        .report-info-banner {
+            break-inside: avoid;
         }
     }
 
