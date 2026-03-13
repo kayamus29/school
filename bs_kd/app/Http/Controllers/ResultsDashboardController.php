@@ -166,10 +166,7 @@ class ResultsDashboardController extends Controller
                     if ($promotion) {
                         $selectedPromotion = $promotion;
                         $courses = StudentCourseExclusion::filterCoursesForStudent($promotion->schoolClass->courses, (int) $student_id, (int) $session_id);
-                        $results = FinalMark::where('student_id', $student_id)
-                            ->where('session_id', $session_id)
-                            ->get()
-                            ->groupBy('course_id');
+                        $results = $this->buildStudentReportResults((int) $student_id, (int) $session_id, $courses);
                         $attendanceSummaries = $this->buildAttendanceSummaries($student_id, $session_id, $semesters, $promotion);
                         $canOverrideAttendanceSummary = $user->hasRole('Teacher')
                             && $this->teacherCanManageSection($sectionAssignments, (int) $promotion->section_id);
@@ -310,39 +307,7 @@ class ResultsDashboardController extends Controller
             ]);
         }
 
-        $results = [];
-
-        foreach ($courses as $course) {
-            if (isset($finalResults[$course->id])) {
-                $results[$course->id] = $finalResults[$course->id];
-            } else {
-                if (isset($rawMarks[$course->id])) {
-                    $courseMarks = $rawMarks[$course->id];
-                    $provisionalBySemester = $courseMarks->groupBy(function ($item) {
-                        return $item->exam->semester_id;
-                    });
-
-                    $simulatedFinalMarks = collect();
-
-                    foreach ($provisionalBySemester as $semesterId => $marks) {
-                        $total = $marks->sum('marks');
-                        $simulated = new FinalMark([
-                            'student_id' => $student->id,
-                            'course_id' => $course->id,
-                            'semester_id' => $semesterId,
-                            'session_id' => $session_id,
-                            'final_marks' => $total,
-                            'is_provisional' => true
-                        ]);
-                        $simulatedFinalMarks->push($simulated);
-                    }
-
-                    if ($simulatedFinalMarks->isNotEmpty()) {
-                        $results[$course->id] = $simulatedFinalMarks;
-                    }
-                }
-            }
-        }
+        $results = $this->buildStudentReportResults((int) $student->id, (int) $session_id, $courses, $finalResults, $rawMarks);
 
         $comments = StudentReportComment::where('student_id', $student->id)
             ->where('session_id', $session_id)
@@ -401,10 +366,7 @@ class ResultsDashboardController extends Controller
 
             if ($promotion) {
                 $courses = StudentCourseExclusion::filterCoursesForStudent($promotion->schoolClass->courses, (int) $student_id, (int) $session_id);
-                $results = FinalMark::where('student_id', $student_id)
-                    ->where('session_id', $session_id)
-                    ->get()
-                    ->groupBy('course_id');
+                $results = $this->buildStudentReportResults((int) $student_id, (int) $session_id, $courses);
                 $attendanceSummaries = $this->buildAttendanceSummaries($student_id, $session_id, $semesters, $promotion);
 
                 $comments = \App\Models\StudentReportComment::where('student_id', $student_id)
@@ -538,6 +500,58 @@ class ResultsDashboardController extends Controller
             'promotion' => $promotion,
             'withheld' => false,
         ]);
+    }
+
+    private function buildStudentReportResults(int $studentId, int $sessionId, $courses, $finalResults = null, $rawMarks = null): array
+    {
+        $finalResults = $finalResults ?? FinalMark::where('student_id', $studentId)
+            ->where('session_id', $sessionId)
+            ->get()
+            ->groupBy('course_id');
+
+        $rawMarks = $rawMarks ?? Mark::with('exam')
+            ->where('student_id', $studentId)
+            ->where('session_id', $sessionId)
+            ->get()
+            ->groupBy('course_id');
+
+        $results = [];
+
+        foreach ($courses as $course) {
+            $courseId = (int) $course->id;
+
+            if (isset($finalResults[$courseId]) && $finalResults[$courseId]->isNotEmpty()) {
+                $results[$courseId] = $finalResults[$courseId];
+                continue;
+            }
+
+            if (!isset($rawMarks[$courseId]) || $rawMarks[$courseId]->isEmpty()) {
+                continue;
+            }
+
+            $provisionalBySemester = $rawMarks[$courseId]->groupBy(function ($item) {
+                return optional($item->exam)->semester_id;
+            })->filter(fn ($marks, $semesterId) => !empty($semesterId));
+
+            $simulatedFinalMarks = collect();
+
+            foreach ($provisionalBySemester as $semesterId => $marks) {
+                $simulatedFinalMarks->push(new FinalMark([
+                    'student_id' => $studentId,
+                    'course_id' => $courseId,
+                    'semester_id' => $semesterId,
+                    'session_id' => $sessionId,
+                    'final_marks' => $marks->sum('marks'),
+                    'is_provisional' => true,
+                ]));
+            }
+
+            if ($simulatedFinalMarks->isNotEmpty()) {
+                $results[$courseId] = $simulatedFinalMarks;
+            }
+        }
+
+        return $results;
     }
 
     private function buildAttendanceSummaries(int $studentId, int $sessionId, $semesters, Promotion $promotion)
