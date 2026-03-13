@@ -384,6 +384,18 @@
                                                             <button class="btn btn-outline-primary" type="submit">Save</button>
                                                         </div>
                                                     </form>
+
+                                                    <form action="{{ route('report.comments.store') }}" method="POST" class="no-print mt-3">
+                                                        @csrf
+                                                        <input type="hidden" name="student_id" value="{{ $selectedStudent->id }}">
+                                                        <input type="hidden" name="semester_id" value="{{ $semester->id }}">
+                                                        <input type="hidden" name="type" value="principal">
+                                                        <label class="form-label text-muted small fw-bold text-uppercase">Update Principal's Remark</label>
+                                                        <div class="input-group">
+                                                            <textarea class="form-control" name="comment" rows="3" placeholder="Enter principal remark...">{{ $comment ? $comment->principal_comment : '' }}</textarea>
+                                                            <button class="btn btn-outline-dark" type="submit">Save</button>
+                                                        </div>
+                                                    </form>
                                                 </div>
                                             @endforeach
                                         </div>
