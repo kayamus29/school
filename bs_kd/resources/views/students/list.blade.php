@@ -136,7 +136,20 @@
 
                                                         <a href="{{url('students/view/profile/' . $student->student->id)}}" role="button" class="btn btn-sm btn-outline-dark"><i class="bi bi-person-fill"></i> Profile</a>
                                                         
-                                                        @if(Auth::user()->hasRole('Admin') || Auth::user()->hasRole('Teacher'))
+                                                        @php
+                                                            $teacherEditKey = $student->class_id . ':' . $student->section_id;
+                                                            $teacherClassWideEditKey = $student->class_id . ':*';
+                                                            $canEditStudent = Auth::user()->hasRole('Admin')
+                                                                || (
+                                                                    Auth::user()->can('edit student')
+                                                                    && in_array($teacherEditKey, $editableStudentScopes ?? [], true)
+                                                                )
+                                                                || (
+                                                                    Auth::user()->can('edit student')
+                                                                    && in_array($teacherClassWideEditKey, $editableStudentScopes ?? [], true)
+                                                                );
+                                                        @endphp
+                                                        @if($canEditStudent)
                                                             <a href="{{route('student.edit.show', ['id' => $student->student->id])}}" role="button" class="btn btn-sm btn-outline-warning"><i class="bi bi-pen"></i> Edit</a>
                                                         @endif
                                                     </div>

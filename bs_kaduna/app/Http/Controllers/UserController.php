@@ -74,6 +74,7 @@ class UserController extends Controller
     {
         $user = Auth::user();
         $current_school_session_id = $this->getSchoolCurrentSession();
+        $editableStudentScopes = [];
 
         $class_id = $request->query('class_id', 0);
         $section_id = $request->query('section_id', 0);
@@ -165,6 +166,18 @@ class UserController extends Controller
                     ->where('session_id', $current_school_session_id)
                     ->pluck('class_id');
 
+                $editableStudentScopes = AssignedTeacher::query()
+                    ->where('teacher_id', $user->id)
+                    ->where('session_id', $current_school_session_id)
+                    ->sectionLeadership()
+                    ->get(['class_id', 'section_id'])
+                    ->map(function ($assignment) {
+                        return (int) $assignment->class_id . ':' . ($assignment->section_id ? (int) $assignment->section_id : '*');
+                    })
+                    ->unique()
+                    ->values()
+                    ->all();
+
                 $school_classes = $this->schoolClassRepository->getAllBySession($current_school_session_id)
                     ->whereIn('id', $assignedClassIds);
             } else {
@@ -194,7 +207,8 @@ class UserController extends Controller
                 'context' => $context,
                 'course_id' => $course_id,
                 'class_id' => $class_id,
-                'section_id' => $section_id
+                'section_id' => $section_id,
+                'editableStudentScopes' => $editableStudentScopes,
             ];
 
             \Illuminate\Support\Facades\Log::info("Returning View", [
