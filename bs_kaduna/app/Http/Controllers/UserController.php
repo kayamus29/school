@@ -41,7 +41,6 @@ class UserController extends Controller
         WalletServiceInterface $walletService
     ) {
         $this->middleware(['can:view-student-list']);
-        $this->middleware(['can:edit student'])->only(['editStudent', 'updateStudent']);
         $this->middleware(['role:Admin'])->only(['showExportForm', 'exportStudents']);
 
         $this->userRepository = $userRepository;

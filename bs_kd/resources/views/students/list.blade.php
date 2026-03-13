@@ -140,14 +140,8 @@
                                                             $teacherEditKey = $student->class_id . ':' . $student->section_id;
                                                             $teacherClassWideEditKey = $student->class_id . ':*';
                                                             $canEditStudent = Auth::user()->hasRole('Admin')
-                                                                || (
-                                                                    Auth::user()->can('edit student')
-                                                                    && in_array($teacherEditKey, $editableStudentScopes ?? [], true)
-                                                                )
-                                                                || (
-                                                                    Auth::user()->can('edit student')
-                                                                    && in_array($teacherClassWideEditKey, $editableStudentScopes ?? [], true)
-                                                                );
+                                                                || in_array($teacherEditKey, $editableStudentScopes ?? [], true)
+                                                                || in_array($teacherClassWideEditKey, $editableStudentScopes ?? [], true);
                                                         @endphp
                                                         @if($canEditStudent)
                                                             <a href="{{route('student.edit.show', ['id' => $student->student->id])}}" role="button" class="btn btn-sm btn-outline-warning"><i class="bi bi-pen"></i> Edit</a>
