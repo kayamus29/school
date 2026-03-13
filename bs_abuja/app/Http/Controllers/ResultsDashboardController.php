@@ -123,14 +123,12 @@ class ResultsDashboardController extends Controller
         $section_id = $request->query('section_id');
         $student_id = $request->query('student_id');
 
-        // Fetch section assignments only (course_id NULL)
-        $sections = AssignedTeacher::with(['schoolClass', 'section'])
+        $sectionAssignments = AssignedTeacher::with(['schoolClass', 'section'])
             ->where('teacher_id', $user->id)
             ->where('session_id', $session_id)
             ->sectionLeadership()
-            ->get()
-            ->unique(fn ($assignment) => $assignment->class_id . '-' . $assignment->section_id)
-            ->values();
+            ->get();
+        $sections = $this->expandManagedSections($sectionAssignments, $session_id);
 
         $students = [];
         $selectedStudent = null;
@@ -144,7 +142,7 @@ class ResultsDashboardController extends Controller
         if ($section_id) {
             // Validate ownership
             if ($user->hasRole('Teacher')) {
-                $isAssigned = $sections->where('section_id', $section_id)->first();
+                $isAssigned = $this->teacherCanManageSection($sectionAssignments, (int) $section_id);
                 if (!$isAssigned && !$user->hasRole('Admin')) {
                     abort(403, 'Unauthorized access to this section.');
                 }
@@ -173,7 +171,8 @@ class ResultsDashboardController extends Controller
                             ->get()
                             ->groupBy('course_id');
                         $attendanceSummaries = $this->buildAttendanceSummaries($student_id, $session_id, $semesters, $promotion);
-                        $canOverrideAttendanceSummary = $user->hasRole('Teacher') && $sections->where('section_id', $promotion->section_id)->isNotEmpty();
+                        $canOverrideAttendanceSummary = $user->hasRole('Teacher')
+                            && $this->teacherCanManageSection($sectionAssignments, (int) $promotion->section_id);
 
                         $comments = \App\Models\StudentReportComment::where('student_id', $student_id)
                             ->where('session_id', $session_id)
@@ -190,6 +189,38 @@ class ResultsDashboardController extends Controller
             : collect();
 
         return view('results.section', compact('sections', 'students', 'selectedStudent', 'selectedPromotion', 'results', 'courses', 'semesters', 'section_id', 'student_id', 'comments', 'attendanceSummaries', 'canOverrideAttendanceSummary', 'endTermUpdates'));
+    }
+
+    private function expandManagedSections($assignments, int $sessionId)
+    {
+        return $assignments
+            ->flatMap(function ($assignment) use ($sessionId) {
+                if ($assignment->section_id) {
+                    return collect([$assignment]);
+                }
+
+                return Section::with('schoolClass')
+                    ->where('session_id', $sessionId)
+                    ->where('class_id', $assignment->class_id)
+                    ->get()
+                    ->map(function ($section) use ($assignment) {
+                        $expanded = clone $assignment;
+                        $expanded->section_id = $section->id;
+                        $expanded->setRelation('section', $section);
+                        $expanded->setRelation('schoolClass', $section->schoolClass);
+
+                        return $expanded;
+                    });
+            })
+            ->unique(fn ($assignment) => $assignment->class_id . '-' . $assignment->section_id)
+            ->values();
+    }
+
+    private function teacherCanManageSection($assignments, int $sectionId): bool
+    {
+        return $assignments->contains(function ($assignment) use ($sectionId) {
+            return (int) $assignment->section_id === $sectionId || $assignment->section_id === null;
+        });
     }
 
     /**

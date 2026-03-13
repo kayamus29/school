@@ -40,7 +40,7 @@ class AttendanceSummaryOverrideController extends Controller
             ->where('teacher_id', Auth::id())
             ->where('session_id', $sessionId)
             ->where('class_id', $promotion->class_id)
-            ->where('section_id', $promotion->section_id)
+            ->forSectionAccess($promotion->section_id)
             ->sectionLeadership()
             ->exists();
 

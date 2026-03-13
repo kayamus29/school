@@ -107,4 +107,18 @@ class AssignedTeacher extends Model
                     ]);
             });
     }
+
+    public function scopeForSectionAccess($query, ?int $sectionId)
+    {
+        return $query->where(function ($inner) use ($sectionId) {
+            if ($sectionId) {
+                $inner->where('section_id', $sectionId)
+                    ->orWhereNull('section_id');
+
+                return;
+            }
+
+            $inner->whereNull('section_id');
+        });
+    }
 }

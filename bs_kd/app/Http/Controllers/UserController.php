@@ -41,7 +41,6 @@ class UserController extends Controller
         WalletServiceInterface $walletService
     ) {
         $this->middleware(['can:view-student-list']);
-        $this->middleware(['can:edit student'])->only(['editStudent', 'updateStudent']);
         $this->middleware(['role:Admin'])->only(['showExportForm', 'exportStudents']);
 
         $this->userRepository = $userRepository;
@@ -308,6 +307,7 @@ class UserController extends Controller
         $parent_info = $this->studentParentInfoRepository->getParentInfo($student_id);
         $current_school_session_id = $this->getSchoolCurrentSession();
         $promotion_info = $this->promotionRepository->getPromotionInfoById($current_school_session_id, $student_id);
+        $this->authorizeStudentEditing($promotion_info?->class_id, $promotion_info?->section_id);
 
         $data = [
             'student' => $student,
@@ -320,11 +320,42 @@ class UserController extends Controller
     public function updateStudent(Request $request)
     {
         try {
+            $studentId = (int) $request->input('student_id');
+            $current_school_session_id = $this->getSchoolCurrentSession();
+            $promotion_info = $this->promotionRepository->getPromotionInfoById($current_school_session_id, $studentId);
+            $this->authorizeStudentEditing($promotion_info?->class_id, $promotion_info?->section_id);
+
             $this->userRepository->updateStudent($request->toArray());
 
             return back()->with('status', 'Student update was successful!');
         } catch (\Exception $e) {
             return back()->withError($e->getMessage());
+        }
+    }
+
+    private function authorizeStudentEditing(?int $classId, ?int $sectionId): void
+    {
+        $user = Auth::user();
+
+        if ($user->hasRole('Admin')) {
+            return;
+        }
+
+        if (!$user->hasRole('Teacher') || !$classId || !$sectionId) {
+            abort(403, 'Teachers do not have access to edit this student.');
+        }
+
+        $current_school_session_id = $this->getSchoolCurrentSession();
+        $isAssigned = AssignedTeacher::query()
+            ->where('teacher_id', $user->id)
+            ->where('session_id', $current_school_session_id)
+            ->where('class_id', $classId)
+            ->forSectionAccess($sectionId)
+            ->sectionLeadership()
+            ->exists();
+
+        if (!$isAssigned) {
+            abort(403, 'Teachers do not have access to edit this student.');
         }
     }
 
