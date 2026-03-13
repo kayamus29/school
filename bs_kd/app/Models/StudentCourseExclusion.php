@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 class StudentCourseExclusion extends Model
 {
@@ -37,6 +38,10 @@ class StudentCourseExclusion extends Model
 
     public static function excludedCourseIdsForStudent(int $studentId, int $sessionId): array
     {
+        if (!Schema::hasTable('student_course_exclusions')) {
+            return [];
+        }
+
         return static::query()
             ->where('student_id', $studentId)
             ->where('session_id', $sessionId)
@@ -59,6 +64,10 @@ class StudentCourseExclusion extends Model
     public static function filterStudentIdsForCourse(Collection $studentIds, int $courseId, int $sessionId): Collection
     {
         if ($studentIds->isEmpty()) {
+            return $studentIds;
+        }
+
+        if (!Schema::hasTable('student_course_exclusions')) {
             return $studentIds;
         }
 
