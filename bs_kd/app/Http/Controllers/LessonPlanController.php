@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Interfaces\SchoolSessionInterface;
 use App\Models\Course;
 use App\Models\LessonPlan;
 use App\Models\Semester;
@@ -16,6 +17,13 @@ use App\Http\Requests\LessonPlanStoreRequest;
 class LessonPlanController extends Controller
 {
     use SchoolSession;
+
+    protected $schoolSessionRepository;
+
+    public function __construct(SchoolSessionInterface $schoolSessionRepository)
+    {
+        $this->schoolSessionRepository = $schoolSessionRepository;
+    }
 
     public function index(Request $request)
     {
