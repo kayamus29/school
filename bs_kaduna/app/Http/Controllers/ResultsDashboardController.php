@@ -14,6 +14,8 @@ use App\Models\Attendance;
 use App\Models\AttendanceSummaryOverride;
 use App\Models\Promotion;
 use App\Models\User;
+use App\Models\SchoolSession as SchoolSessionModel;
+use App\Models\StudentReportComment;
 use App\Models\EndTermUpdate;
 use App\Traits\SchoolSession;
 use App\Interfaces\SchoolSessionInterface;
@@ -193,65 +195,98 @@ class ResultsDashboardController extends Controller
     /**
      * Student View
      */
-    public function studentView()
+    public function studentView(Request $request)
     {
         $student = Auth::user();
         if (!$student->hasRole('Student')) {
             abort(403);
         }
 
-        $session_id = $this->getSchoolCurrentSession();
-        $semesters = Semester::where('session_id', $session_id)->orderBy('id')->get();
+        $currentSessionId = $this->getSchoolCurrentSession();
+        $availableSessions = $this->getAvailableResultSessionsForStudent($student, $currentSessionId);
+        $session_id = (int) $request->query('session_id', $currentSessionId);
 
-        // Get all courses student is registered in (via Promotion -> Class -> Courses)
+        if ($availableSessions->where('id', $session_id)->isEmpty()) {
+            $session_id = (int) optional($availableSessions->first())->id ?: $currentSessionId;
+        }
+
+        $selectedSession = $availableSessions->firstWhere('id', $session_id)
+            ?? SchoolSessionModel::find($session_id)
+            ?? $availableSessions->first();
+        $semesters = Semester::where('session_id', $session_id)->orderBy('id')->get();
+        $selectedSemesterId = (int) $request->query('semester_id', 0);
+        $selectedSemester = $semesters->firstWhere('id', $selectedSemesterId);
+        $visibleSemesters = $selectedSemester ? collect([$selectedSemester]) : $semesters;
+        $reportTermLabel = $selectedSemester
+            ? $selectedSemester->semester_name
+            : $this->resolveReportTermLabel($semesters, $session_id, $currentSessionId);
+
         $promotion = Promotion::where('student_id', $student->id)
             ->where('session_id', $session_id)
             ->with(['schoolClass.courses', 'section', 'session'])
             ->first();
 
-        if (!$promotion) {
-            return view('results.student', [
-                'student' => $student,
-                'session_id' => $session_id,
-                'semesters' => $semesters,
-                'error' => 'No active enrollment found for current session.'
-            ]);
-        }
-
-        // Apply Financial Withholding Gate
         if (!\App\Classes\AcademicGate::canViewResults($student)) {
             $withheld = true;
-            return view('results.student', compact('student', 'session_id', 'semesters', 'withheld', 'promotion'));
+            return view('results.student', compact(
+                'student',
+                'session_id',
+                'semesters',
+                'withheld',
+                'promotion',
+                'availableSessions',
+                'selectedSession',
+                'selectedSemesterId',
+                'selectedSemester',
+                'visibleSemesters',
+                'reportTermLabel'
+            ));
         }
 
-        $courses = StudentCourseExclusion::filterCoursesForStudent($promotion->schoolClass->courses, (int) $student->id, (int) $session_id);
-
-        // 1. Fetch Final Marks (Official)
         $finalResults = FinalMark::where('student_id', $student->id)
             ->where('session_id', $session_id)
             ->get()
             ->groupBy('course_id');
 
-        // 2. Fetch Provisional Marks (Real-time)
-        // We only fetch these if we want to show provisional data.
-        // It's efficient to fetch all for the student/session to fill gaps.
         $rawMarks = Mark::with('exam')
             ->where('student_id', $student->id)
             ->where('session_id', $session_id)
             ->get()
             ->groupBy('course_id');
 
+        if ($promotion && $promotion->schoolClass) {
+            $courses = StudentCourseExclusion::filterCoursesForStudent($promotion->schoolClass->courses, (int) $student->id, (int) $session_id);
+        } else {
+            $courseIds = $finalResults->keys()->merge($rawMarks->keys())->unique()->filter()->values();
+            $courses = Course::whereIn('id', $courseIds)->orderBy('course_name')->get();
+        }
+
+        if (!$promotion && $courses->isEmpty()) {
+            return view('results.student', compact(
+                'student',
+                'session_id',
+                'semesters',
+                'availableSessions',
+                'selectedSession',
+                'selectedSemesterId',
+                'selectedSemester',
+                'visibleSemesters',
+                'reportTermLabel'
+            ) + [
+                'error' => $session_id === $currentSessionId
+                    ? 'No active enrollment or result records found for the current session.'
+                    : 'No result records found for the selected session.',
+            ]);
+        }
+
         $results = [];
 
         foreach ($courses as $course) {
-            // Prefer Final Result if it exists
             if (isset($finalResults[$course->id])) {
                 $results[$course->id] = $finalResults[$course->id];
             } else {
-                // Construct Provisional Result from Raw Marks
                 if (isset($rawMarks[$course->id])) {
                     $courseMarks = $rawMarks[$course->id];
-                    // Group by Semester
                     $provisionalBySemester = $courseMarks->groupBy(function ($item) {
                         return $item->exam->semester_id;
                     });
@@ -259,22 +294,14 @@ class ResultsDashboardController extends Controller
                     $simulatedFinalMarks = collect();
 
                     foreach ($provisionalBySemester as $semesterId => $marks) {
-                        $total = $marks->sum('marks'); // Sum of (Exam + CA1 + CA2) for all exams in this semester?
-                        // Wait, usually multiple exams per semester? Or one exam per semester?
-                        // Usually 1 exam + CAs per course per semester.
-                        // But if there are multiple exams (e.g. Midterm + Final), the Logic in MarkController sums them?
-                        // Let's check MarkController logic. It stores 'marks' = sum(breakdown).
-                        // Checks for duplicate exam entries?
-                        // Mark model has 'exam_id'.
-                        // If there are multiple exams for one course in one semester, we normally sum them.
-
+                        $total = $marks->sum('marks');
                         $simulated = new FinalMark([
                             'student_id' => $student->id,
                             'course_id' => $course->id,
                             'semester_id' => $semesterId,
                             'session_id' => $session_id,
                             'final_marks' => $total,
-                            'is_provisional' => true // Virtual attribute
+                            'is_provisional' => true
                         ]);
                         $simulatedFinalMarks->push($simulated);
                     }
@@ -286,16 +313,34 @@ class ResultsDashboardController extends Controller
             }
         }
 
-        $comments = \App\Models\StudentReportComment::where('student_id', $student->id)
+        $comments = StudentReportComment::where('student_id', $student->id)
             ->where('session_id', $session_id)
             ->get()
             ->keyBy('semester_id');
-        $attendanceSummaries = $this->buildAttendanceSummaries($student->id, $session_id, $semesters, $promotion);
+        $attendanceSummaries = $promotion
+            ? $this->buildAttendanceSummaries($student->id, $session_id, $semesters, $promotion)
+            : collect();
         $endTermUpdates = Schema::hasTable('end_term_updates')
             ? EndTermUpdate::where('session_id', $session_id)->get()->keyBy('semester_id')
             : collect();
 
-        return view('results.student', compact('student', 'semesters', 'courses', 'results', 'promotion', 'comments', 'attendanceSummaries', 'endTermUpdates'));
+        return view('results.student', compact(
+            'student',
+            'session_id',
+            'semesters',
+            'courses',
+            'results',
+            'promotion',
+            'comments',
+            'attendanceSummaries',
+            'endTermUpdates',
+            'availableSessions',
+            'selectedSession',
+            'selectedSemesterId',
+            'selectedSemester',
+            'visibleSemesters',
+            'reportTermLabel'
+        ));
     }
 
     /**
@@ -355,10 +400,22 @@ class ResultsDashboardController extends Controller
         $request->validate([
             'student_id' => 'required|exists:users,id',
             'course_id' => 'required|exists:courses,id',
-            'semester_id' => 'required|exists:semesters,id'
+            'semester_id' => 'required|exists:semesters,id',
+            'session_id' => 'nullable|exists:school_sessions,id',
         ]);
 
-        $session_id = $this->getSchoolCurrentSession();
+        $session_id = (int) $request->query('session_id', $this->getSchoolCurrentSession());
+
+        if (Auth::user()->hasRole('Student')) {
+            $allowedSessionIds = $this->getAvailableResultSessionsForStudent(Auth::user(), $this->getSchoolCurrentSession())
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            if (!in_array($session_id, $allowedSessionIds, true)) {
+                abort(403, 'Unauthorized result session access.');
+            }
+        }
 
         if (in_array((int) $request->course_id, StudentCourseExclusion::excludedCourseIdsForStudent((int) $request->student_id, (int) $session_id), true)) {
             return response()->json([
@@ -368,7 +425,7 @@ class ResultsDashboardController extends Controller
             ]);
         }
 
-        $marks = Mark::with('exam')
+        $marks = Mark::with('exam.examRule')
             ->where('student_id', $request->student_id)
             ->where('course_id', $request->course_id)
             ->where('session_id', $session_id)
@@ -465,7 +522,7 @@ class ResultsDashboardController extends Controller
                 ->where('session_id', $sessionId)
                 ->where('class_id', $promotion->class_id)
                 ->where('section_id', $promotion->section_id)
-                ->where('status', 'on')
+                ->whereIn('status', ['on', 'present', 'Present'])
                 ->whereBetween('created_at', [$semester->start_date, $semester->end_date])
                 ->get()
                 ->groupBy(fn ($attendance) => optional($attendance->created_at)->format('Y-m-d'))
@@ -487,5 +544,43 @@ class ResultsDashboardController extends Controller
                 ],
             ];
         });
+    }
+
+    private function getAvailableResultSessionsForStudent(User $student, int $currentSessionId)
+    {
+        $sessionIds = Promotion::where('student_id', $student->id)->pluck('session_id')
+            ->merge(FinalMark::where('student_id', $student->id)->pluck('session_id'))
+            ->merge(Mark::where('student_id', $student->id)->pluck('session_id'))
+            ->merge(StudentReportComment::where('student_id', $student->id)->pluck('session_id'))
+            ->unique()
+            ->filter()
+            ->values();
+
+        if ($sessionIds->isEmpty()) {
+            $sessionIds = collect([$currentSessionId]);
+        } elseif (!$sessionIds->contains($currentSessionId)) {
+            $sessionIds->prepend($currentSessionId);
+        }
+
+        return SchoolSessionModel::whereIn('id', $sessionIds)->orderByDesc('id')->get();
+    }
+
+    private function resolveReportTermLabel($semesters, int $sessionId, int $currentSessionId): string
+    {
+        if ($sessionId !== $currentSessionId) {
+            return 'Session Overview';
+        }
+
+        $today = now()->toDateString();
+        $activeSemester = $semesters->first(function ($semester) use ($today) {
+            return !empty($semester->start_date)
+                && !empty($semester->end_date)
+                && $today >= $semester->start_date
+                && $today <= $semester->end_date;
+        });
+
+        return $activeSemester
+            ? 'Current Term: ' . $activeSemester->semester_name
+            : 'Session Overview';
     }
 }

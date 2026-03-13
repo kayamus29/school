@@ -13,12 +13,12 @@ const ResultsDashboard = {
         document.querySelectorAll('.clickable-mark').forEach(el => {
             el.addEventListener('click', (e) => {
                 const data = e.currentTarget.dataset;
-                this.loadBreakdown(data.studentId, data.courseId, data.semesterId);
+                this.loadBreakdown(data.studentId, data.courseId, data.semesterId, data.sessionId);
             });
         });
     },
 
-    async loadBreakdown(studentId, courseId, semesterId) {
+    async loadBreakdown(studentId, courseId, semesterId, sessionId) {
         const modal = new bootstrap.Modal(document.getElementById('breakdownModal'));
         const container = document.getElementById('breakdownContent');
 
@@ -27,7 +27,7 @@ const ResultsDashboard = {
 
         try {
             const response = await axios.get('/ajax/results/breakdown', {
-                params: { student_id: studentId, course_id: courseId, semester_id: semesterId }
+                params: { student_id: studentId, course_id: courseId, semester_id: semesterId, session_id: sessionId }
             });
 
             if (response.data.success) {
@@ -46,19 +46,31 @@ const ResultsDashboard = {
             return;
         }
 
-        // 1. Determine Dynamic Headers from the first assessment's exam rule
-        // Fallback to standard 3 columns if not defined
         const representativeMark = data.assessments[0];
-        const breakdownConfig = representativeMark.exam && representativeMark.exam.exam_rule
-            ? representativeMark.exam.exam_rule.marks_breakdown
+        const examRule = representativeMark.exam
+            ? (representativeMark.exam.exam_rule || representativeMark.exam.examRule)
+            : null;
+        const breakdownConfig = examRule && examRule.marks_breakdown
+            ? examRule.marks_breakdown
             : null;
 
         let headers = [];
         if (breakdownConfig && Array.isArray(breakdownConfig)) {
-            headers = breakdownConfig.map(b => b.name);
+            headers = breakdownConfig.map((item) => ({
+                key: this.normalizeBreakdownKey(item.name),
+                label: item.name
+            }));
+        } else if (representativeMark.breakdown_marks && Object.keys(representativeMark.breakdown_marks).length > 0) {
+            headers = Object.keys(representativeMark.breakdown_marks).map((key) => ({
+                key,
+                label: this.humanizeBreakdownKey(key)
+            }));
         } else {
-            // Default fallback if no rule found
-            headers = ['CA 1', 'CA 2', 'Exam'];
+            headers = [
+                { key: 'ca_1', label: 'CA 1' },
+                { key: 'ca_2', label: 'CA 2' },
+                { key: 'final_exam', label: 'Exam' }
+            ];
         }
 
         let html = `
@@ -67,7 +79,7 @@ const ResultsDashboard = {
                     <thead class="bg-light">
                         <tr>
                             <th>Assessment</th>
-                            ${headers.map(h => `<th class="text-center">${h}</th>`).join('')}
+                            ${headers.map(h => `<th class="text-center">${h.label}</th>`).join('')}
                             <th class="text-center">Total</th>
                         </tr>
                     </thead>
@@ -77,34 +89,10 @@ const ResultsDashboard = {
         data.assessments.forEach(m => {
             html += `<tr><td class="fw-bold text-nowrap">${m.exam.exam_name}</td>`;
 
-            if (breakdownConfig) {
-                // Dynamic rendering based on config keys
-                breakdownConfig.forEach(item => {
-                    // Slugify logic similar to PHP: 'Final Exam' -> 'final_exam'
-                    const key = item.name.toLowerCase().replace(/ /g, '_');
-
-                    let val = 0;
-                    if (m.breakdown_marks && m.breakdown_marks[key] !== undefined) {
-                        val = m.breakdown_marks[key];
-                    } else if (m.breakdown_marks && m.breakdown_marks[item.name] !== undefined) {
-                        val = m.breakdown_marks[item.name];
-                    } else {
-                        // Semantic Fallbacks for old data
-                        if (key.includes('final') || key.includes('exam')) val = m.exam_mark || 0;
-                        else if (key.includes('ca_1') || key.includes('ca1')) val = m.ca1_mark || 0;
-                        else if (key.includes('ca_2') || key.includes('ca2')) val = m.ca2_mark || 0;
-                    }
-
-                    html += `<td class="text-center">${val}</td>`;
-                });
-            } else {
-                // Fallback rendering
-                html += `
-                    <td class="text-center">${m.ca1_mark || 0}</td>
-                    <td class="text-center">${m.ca2_mark || 0}</td>
-                    <td class="text-center">${m.exam_mark || 0}</td>
-                `;
-            }
+            headers.forEach((header) => {
+                const val = this.resolveBreakdownValue(m, header.key);
+                html += `<td class="text-center">${val}</td>`;
+            });
 
             html += `<td class="text-center fw-bold">${m.marks}</td></tr>`;
         });
@@ -130,6 +118,37 @@ const ResultsDashboard = {
         }
 
         container.innerHTML = html;
+    },
+
+    normalizeBreakdownKey(label) {
+        return String(label || '')
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '');
+    },
+
+    humanizeBreakdownKey(key) {
+        return String(key || '')
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, (char) => char.toUpperCase());
+    },
+
+    resolveBreakdownValue(mark, key) {
+        if (mark.breakdown_marks && mark.breakdown_marks[key] !== undefined) {
+            return mark.breakdown_marks[key];
+        }
+
+        const normalizedKey = this.normalizeBreakdownKey(key);
+        if (mark.breakdown_marks && mark.breakdown_marks[normalizedKey] !== undefined) {
+            return mark.breakdown_marks[normalizedKey];
+        }
+
+        if (normalizedKey.includes('final') || normalizedKey.includes('exam')) return mark.exam_mark || 0;
+        if (normalizedKey === 'ca_1' || normalizedKey === 'ca1' || normalizedKey.includes('first_ca')) return mark.ca1_mark || 0;
+        if (normalizedKey === 'ca_2' || normalizedKey === 'ca2' || normalizedKey.includes('second_ca')) return mark.ca2_mark || 0;
+
+        return 0;
     },
 
     setupKeyboardShortcuts() {

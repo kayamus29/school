@@ -15,14 +15,19 @@
             $site_setting->school_phone ?? null,
             $site_setting->school_email ?? null,
         ])->filter()->implode(' | ');
-        $sessionName = optional(optional($promotion)->session)->session_name ?? 'Current Session';
+        $sessionName = optional($selectedSession ?? optional($promotion)->session)->session_name ?? 'Current Session';
         $className = optional(optional($promotion)->schoolClass)->class_name ?? 'Not Assigned';
         $sectionName = optional(optional($promotion)->section)->section_name ?? null;
         $gender = ucfirst($student->gender ?? 'N/A');
         $birthday = !empty($student->birthday) ? \Carbon\Carbon::parse($student->birthday)->format('d M Y') : 'N/A';
+        $displaySemesters = $visibleSemesters ?? $semesters;
 
-        $flatScores = collect($results ?? [])->flatMap(function ($courseResults) {
-            return collect($courseResults)->pluck('final_marks');
+        $flatScores = collect($results ?? [])->flatMap(function ($courseResults) use ($displaySemesters) {
+            $visibleSemesterIds = $displaySemesters->pluck('id')->all();
+
+            return collect($courseResults)
+                ->whereIn('semester_id', $visibleSemesterIds)
+                ->pluck('final_marks');
         })->filter(fn($score) => $score !== null);
 
         $overallAverage = $flatScores->count() ? round($flatScores->avg(), 1) : 0;
@@ -67,6 +72,34 @@
                                 <p class="mb-0">{{ $error }}</p>
                             </div>
                         @else
+                            <div class="card shadow-sm border-0 mb-4 report-hidden-print">
+                                <div class="card-body">
+                                    <form action="{{ route('results.student') }}" method="GET" class="row g-3 align-items-end">
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Session</label>
+                                            <select name="session_id" class="form-select" onchange="this.form.submit()">
+                                                @foreach($availableSessions as $session)
+                                                    <option value="{{ $session->id }}" {{ (int) $session_id === (int) $session->id ? 'selected' : '' }}>
+                                                        {{ $session->session_name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Term</label>
+                                            <select name="semester_id" class="form-select" onchange="this.form.submit()">
+                                                <option value="">All Terms</option>
+                                                @foreach($semesters as $semester)
+                                                    <option value="{{ $semester->id }}" {{ (int) $selectedSemesterId === (int) $semester->id ? 'selected' : '' }}>
+                                                        {{ $semester->semester_name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
                             <div class="report-toolbar report-hidden-print">
                                 <button onclick="window.print()" class="btn btn-outline-primary shadow-sm px-4">
                                     <i class="bi bi-printer me-2"></i>Print Report
@@ -91,7 +124,7 @@
                                     </div>
                                     <div class="report-badge-box">
                                         <span class="report-badge-label">Student Report</span>
-                                        <span class="report-badge-term">Session Overview</span>
+                                        <span class="report-badge-term">{{ $reportTermLabel ?? 'Session Overview' }}</span>
                                         <span class="report-badge-session">{{ $sessionName }}</span>
                                     </div>
                                 </div>
@@ -142,7 +175,7 @@
                                                 <thead>
                                                     <tr>
                                                         <th style="width: 28%;">Subject</th>
-                                                        @foreach($semesters as $semester)
+                                                        @foreach($displaySemesters as $semester)
                                                             <th class="text-center">{{ $semester->semester_name }}</th>
                                                         @endforeach
                                                         <th class="text-center">Average</th>
@@ -154,7 +187,7 @@
                                                         @php
                                                             $courseMarks = collect($results[$course->id] ?? []);
                                                             $termScores = [];
-                                                            foreach ($semesters as $semester) {
+                                                            foreach ($displaySemesters as $semester) {
                                                                 $termScores[$semester->id] = optional($courseMarks->where('semester_id', $semester->id)->first())->final_marks;
                                                             }
                                                             $existingScores = collect($termScores)->filter(fn($score) => $score !== null);
@@ -167,7 +200,7 @@
                                                                 {{ $course->course_name }}
                                                                 <span class="report-tag {{ $tagClass }}">{{ $course->course_type }}</span>
                                                             </td>
-                                                            @foreach($semesters as $semester)
+                                                            @foreach($displaySemesters as $semester)
                                                                 @php
                                                                     $mark = $courseMarks->where('semester_id', $semester->id)->first();
                                                                     $score = optional($mark)->final_marks;
@@ -178,7 +211,8 @@
                                                                             style="cursor:pointer;"
                                                                             data-student-id="{{ $student->id }}"
                                                                             data-course-id="{{ $course->id }}"
-                                                                            data-semester-id="{{ $semester->id }}">
+                                                                            data-semester-id="{{ $semester->id }}"
+                                                                            data-session-id="{{ $session_id }}">
                                                                             {{ number_format($score, 1) }}
                                                                         </span>
                                                                     @else
@@ -210,7 +244,7 @@
                                         </div>
                                     </div>
 
-                                    @foreach($semesters as $semester)
+                                    @foreach($displaySemesters as $semester)
                                         @php
                                             $attendanceSummary = isset($attendanceSummaries) ? $attendanceSummaries->get($semester->id) : null;
                                             $comment = isset($comments) ? $comments->get($semester->id) : null;
@@ -277,7 +311,20 @@
                                                 </div>
                                             </div>
 
-                                            @include('results.partials.end-term-update', ['endTermUpdate' => $endTermUpdate, 'semester' => $semester])
+                                            @if($endTermUpdate)
+                                                <div class="report-section-title">News & Events</div>
+                                                <div class="report-next-term-card">
+                                                    <div class="report-next-term-label">{{ $endTermUpdate->title ?: ($semester->semester_name . ' Update') }}</div>
+                                                    <div class="report-next-term-note">
+                                                        School news, announcements, and next-term details are available on a separate page.
+                                                    </div>
+                                                    <div class="mt-3 report-hidden-print">
+                                                        <a href="{{ route('student.end-term-news', ['session_id' => $session_id, 'semester_id' => $semester->id]) }}" class="btn btn-outline-primary btn-sm">
+                                                            <i class="bi bi-box-arrow-up-right me-1"></i> Open News
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            @endif
                                         </div>
                                     @endforeach
                                 </div>

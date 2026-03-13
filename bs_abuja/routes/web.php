@@ -275,6 +275,8 @@ Route::middleware(['auth'])->group(function () {
     // Notices
     Route::get('/notice/create', [NoticeController::class, 'create'])->name('notice.create');
     Route::post('/notice/create', [NoticeController::class, 'store'])->name('notice.store');
+    Route::put('/notice/{notice}', [NoticeController::class, 'update'])->name('notice.update');
+    Route::delete('/notice/{notice}', [NoticeController::class, 'destroy'])->name('notice.destroy');
 
     // Courses
     Route::get('courses/teacher/index', [AssignedTeacherController::class, 'getTeacherCourses'])->name('course.teacher.list.show');
@@ -313,6 +315,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/marks', [App\Http\Controllers\StudentPortalController::class, 'marks'])->name('marks');
         Route::get('/fees', [App\Http\Controllers\StudentPortalController::class, 'fees'])->name('fees');
         Route::get('/timetable', [App\Http\Controllers\StudentPortalController::class, 'timetable'])->name('timetable');
+        Route::get('/news/end-term', [App\Http\Controllers\StudentPortalController::class, 'endTermNews'])->name('end-term-news');
     });
 
 });

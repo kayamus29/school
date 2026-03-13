@@ -91,7 +91,7 @@
                                             </div>
 
                                             <div class="mb-3">
-                                                <label class="form-label fw-semibold">Newsletter Link</label>
+                                                <label class="form-label fw-semibold">External Newsletter Link <span class="text-muted">(Optional)</span></label>
                                                 <input
                                                     type="url"
                                                     name="newsletter_url"
@@ -99,6 +99,9 @@
                                                     class="form-control bg-light border-light"
                                                     value="{{ old('newsletter_url', $update->newsletter_url) }}"
                                                     placeholder="https://example.com/end-of-term-newsletter">
+                                                <div class="form-text">
+                                                    Leave this empty if students should read the news inside the portal.
+                                                </div>
                                             </div>
 
                                             <div class="row g-3">

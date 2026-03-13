@@ -94,10 +94,10 @@
                                                 <tbody>
                                                     @forelse($recentAttendance as $record)
                                                         <tr>
-                                                            <td class="ps-4">{{ $record->created_at->format('d M, Y') }}</td>
+                                                            <td class="ps-4">{{ optional($record->attendance_date ?? $record->created_at)->format('d M, Y') }}</td>
                                                             <td>
-                                                                <span class="badge rounded-pill {{ $record->status == 'Present' ? 'bg-success' : 'bg-danger' }}">
-                                                                    {{ $record->status }}
+                                                                <span class="badge rounded-pill {{ ($record->display_status ?? $record->status) == 'Present' ? 'bg-success' : 'bg-danger' }}">
+                                                                    {{ $record->display_status ?? $record->status }}
                                                                 </span>
                                                             </td>
                                                             <td>{{ $record->schoolClass->class_name ?? 'N/A' }}</td>

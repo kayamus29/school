@@ -37,7 +37,16 @@ class NoticeController extends Controller
     public function create()
     {
         $current_school_session_id = $this->getSchoolCurrentSession();
-        return view('notices.create', compact('current_school_session_id'));
+        $notice = request()->query('notice_id')
+            ? Notice::where('id', request()->query('notice_id'))
+                ->where('session_id', $current_school_session_id)
+                ->first()
+            : null;
+        $notices = Notice::where('session_id', $current_school_session_id)
+            ->latest()
+            ->get();
+
+        return view('notices.create', compact('current_school_session_id', 'notices', 'notice'));
     }
 
     /**
@@ -87,9 +96,23 @@ class NoticeController extends Controller
      * @param  \App\Models\Notice  $notice
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Notice $notice)
+    public function update(NoticeStoreRequest $request, Notice $notice)
     {
-        //
+        try {
+            $current_school_session_id = $this->getSchoolCurrentSession();
+            if ((int) $notice->session_id !== (int) $current_school_session_id) {
+                abort(403);
+            }
+
+            $notice->update([
+                'notice' => $request->notice,
+                'session_id' => $current_school_session_id,
+            ]);
+
+            return redirect()->route('notice.create')->with('status', 'Notice updated successfully!');
+        } catch (\Exception $e) {
+            return back()->withError($e->getMessage());
+        }
     }
 
     /**
@@ -100,6 +123,17 @@ class NoticeController extends Controller
      */
     public function destroy(Notice $notice)
     {
-        //
+        try {
+            $current_school_session_id = $this->getSchoolCurrentSession();
+            if ((int) $notice->session_id !== (int) $current_school_session_id) {
+                abort(403);
+            }
+
+            $notice->delete();
+
+            return back()->with('status', 'Notice deleted successfully!');
+        } catch (\Exception $e) {
+            return back()->withError($e->getMessage());
+        }
     }
 }

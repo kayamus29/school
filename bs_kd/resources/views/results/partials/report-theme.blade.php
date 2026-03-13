@@ -615,6 +615,10 @@
             padding: 0 !important;
         }
 
+        body * {
+            visibility: hidden !important;
+        }
+
         .no-print,
         .report-hidden-print,
         .col-xs-12.col-sm-12.col-md-3.col-lg-2,
@@ -623,7 +627,16 @@
             display: none !important;
         }
 
+        .report-page,
+        .report-page * {
+            visibility: visible !important;
+        }
+
         .report-page {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
             box-shadow: none;
             border-radius: 0;
             max-width: 100%;
