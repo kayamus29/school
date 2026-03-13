@@ -30,13 +30,20 @@
                                     <tr>
                                         <th scope="col">Student Name</th>
                                         <th scope="col">Today's Status</th>
-                                        <th scope="col">Total Attended</th>
+                                        <th scope="col">Attendance</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach ($attendances as $attendance)
                                         @php
-                                            $total_attended = \App\Models\Attendance::where('student_id', $attendance->student_id)->where('session_id', $attendance->session_id)->count();
+                                            if ($semester) {
+                                                $total_attended = \App\Models\Attendance::where('student_id', $attendance->student_id)
+                                                    ->where('status', 'on')
+                                                    ->whereBetween('created_at', [$semester->start_date, $semester->end_date])
+                                                    ->count();
+                                            } else {
+                                                $total_attended = 'N/A';
+                                            }
                                         @endphp
                                         <tr>
                                             <td>{{$attendance->student->first_name}} {{$attendance->student->last_name}}</td>
@@ -48,7 +55,13 @@
                                                 @endif
                                                 
                                             </td>
-                                            <td>{{$total_attended}}</td>
+                                            <td>
+                                                @if ($semester)
+                                                    {{$total_attended}} / {{$semester->total_school_days}}
+                                                @else
+                                                    N/A
+                                                @endif
+                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>

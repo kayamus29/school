@@ -232,6 +232,15 @@ class UserRepository implements UserInterface
         }
     }
 
+    public function findStudentByEmail($email)
+    {
+        try {
+            return User::with('parent_info', 'academic_info')->where('email', $email)->first();
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to get Student by Email. ' . $e->getMessage());
+        }
+    }
+
     public function findTeacher($id)
     {
         try {

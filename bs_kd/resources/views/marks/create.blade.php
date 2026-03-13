@@ -113,16 +113,17 @@
                                                                         @php
                                                                             $key = Str::slug($item['name'], '_');
                                                                             $val = 0;
-                                                                                                                                                            if ($mark && $mark->breakdown_marks && isset($mark->breakdown_marks[$key])) {
-                                                                                                                                                                $val = $mark->breakdown_marks[$key];
-                                                                                                                                                            } elseif ($mark) {
-                                                                                                                                                                if ($key == 'final_exam' || $key == 'exam')
-                                                                                                                                                                    $val = $mark->exam_mark;
-                                                                                                                                                                elseif ($key == 'ca_1' || $key == 'ca1')
-                                                                                                                                                                    $val = $mark->ca1_mark;
-                                                                                                                                                                elseif ($key == 'ca_2' || $key == 'ca2')
-                                                                                                                                                                    $val = $mark->ca2_mark;
-                                                                                                                                                            }                                                                        @endphp
+                                                                            if ($mark && $mark->breakdown_marks && isset($mark->breakdown_marks[$key])) {
+                                                                                $val = $mark->breakdown_marks[$key];
+                                                                            } elseif ($mark) {
+                                                                                if ($key == 'final_exam' || $key == 'exam')
+                                                                                    $val = $mark->exam_mark;
+                                                                                elseif ($key == 'ca_1' || $key == 'ca1')
+                                                                                    $val = $mark->ca1_mark;
+                                                                                elseif ($key == 'ca_2' || $key == 'ca2')
+                                                                                    $val = $mark->ca2_mark;
+                                                                            }
+                                                                        @endphp
                                                                         <td>
                                                                             <input type="number" step="0.01"
                                                                                 class="form-control form-control-sm"
@@ -154,11 +155,12 @@
                                                             @isset($exams)
                                                                 @foreach ($exams as $exam)
                                                                     @php
-                                                                                                                                            $breakdown = $exam->examRule->marks_breakdown ?? [
-                                                                        ['name' => 'Final Exam', 'weight' => 70],
-                                                                        ['name' => 'CA 1', 'weight' => 15],
-                                                                        ['name' => 'CA 2', 'weight' => 15]
-                                                                    ];                                                                    @endphp
+                                                                        $breakdown = $exam->examRule->marks_breakdown ?? [
+                                                                            ['name' => 'Final Exam', 'weight' => 70],
+                                                                            ['name' => 'CA 1', 'weight' => 15],
+                                                                            ['name' => 'CA 2', 'weight' => 15]
+                                                                        ];
+                                                                    @endphp
                                                                     @foreach($breakdown as $item)
                                                                         @php
                                                                             $key = Str::slug($item['name'], '_');

@@ -54,7 +54,7 @@ class RoleSeeder extends Seeder
         $roles = [
             'Admin' => [],
             'Accountant' => ['view accounting dashboard', 'manage fee heads', 'assign fees', 'collect fees', 'manage expenses', 'staff check-in', 'create expenses'],
-            'Teacher' => ['view assigned classes', 'take attendance', 'manage marks', 'save marks', 'view marks', 'create exams', 'view exams', 'view assigned syllabus', 'staff check-in', 'create expense transfer', 'view assigned students', 'edit student'],
+            'Teacher' => ['view assigned classes', 'take attendance', 'manage marks', 'save marks', 'view marks', 'create exams', 'view exams', 'view assigned syllabus', 'staff check-in', 'create expense transfer', 'view assigned students', 'create expenses', 'edit student'],
             'Normal Staff' => ['staff check-in', 'create expense transfer'],
             'Student' => ['view own attendance', 'view own marks'],
             'Parent' => ['view child records'],

@@ -2,10 +2,26 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class AddPerformanceIndexes extends Migration
 {
+    /**
+     * Helper to check if an index exists on a table.
+     *
+     * @param string $tableName
+     * @param string $indexName
+     * @return bool
+     */
+    private function indexExists(string $tableName, string $indexName): bool
+    {
+        // This is a raw query fallback for older Laravel versions
+        // that don't have Schema::hasIndex.
+        $indexs = DB::select("SHOW INDEX FROM {$tableName} WHERE Key_name = '{$indexName}'");
+        return count($indexs) > 0;
+    }
+
     /**
      * Run the migrations.
      *
@@ -18,30 +34,46 @@ class AddPerformanceIndexes extends Migration
 
         Schema::table('wallets', function (Blueprint $table) {
             // Wallets are almost always looked up by student. This should be unique.
-            $table->unique('student_id', 'wallets_student_id_unique');
+            if (!$this->indexExists('wallets', 'wallets_student_id_unique')) {
+                $table->unique('student_id', 'wallets_student_id_unique');
+            }
         });
 
         Schema::table('promotions', function (Blueprint $table) {
             // This composite index is critical for finding a student's current class in a session.
-            $table->index(['student_id', 'session_id'], 'promotions_student_session_composite');
+            if (!$this->indexExists('promotions', 'promotions_student_session_composite')) {
+                $table->index(['student_id', 'session_id'], 'promotions_student_session_composite');
+            }
             // This is used for finding all students in a class for a session (e.g., billing preview).
-            $table->index(['session_id', 'class_id'], 'promotions_session_class_composite');
+            if (!$this->indexExists('promotions', 'promotions_session_class_composite')) {
+                $table->index(['session_id', 'class_id'], 'promotions_session_class_composite');
+            }
         });
 
         Schema::table('student_fees', function (Blueprint $table) {
             // For finding all fees for a student.
-            $table->index('student_id');
+            if (!$this->indexExists('student_fees', 'student_fees_student_id_index')) {
+                $table->index('student_id', 'student_fees_student_id_index');
+            }
             // For finding arrears and other session-specific fees.
-            $table->index('session_id');
+            if (!$this->indexExists('student_fees', 'student_fees_session_id_index')) {
+                $table->index('session_id', 'student_fees_session_id_index');
+            }
             // For idempotency checks on carry-forward arrears.
-            $table->index('reference');
+            if (!$this->indexExists('student_fees', 'student_fees_reference_index')) {
+                $table->index('reference', 'student_fees_reference_index');
+            }
         });
 
         Schema::table('wallet_transactions', function (Blueprint $table) {
             // For retrieving a wallet's history.
-            $table->index('wallet_id');
+            if (!$this->indexExists('wallet_transactions', 'wallet_transactions_wallet_id_index')) {
+                $table->index('wallet_id', 'wallet_transactions_wallet_id_index');
+            }
             // For finding the transaction related to a specific model (e.g., StudentFee, Payment).
-            $table->index(['reference_type', 'reference_id'], 'wallet_transactions_reference_poly_composite');
+            if (!$this->indexExists('wallet_transactions', 'wallet_transactions_reference_poly_composite')) {
+                $table->index(['reference_type', 'reference_id'], 'wallet_transactions_reference_poly_composite');
+            }
         });
     }
 

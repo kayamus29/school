@@ -37,7 +37,6 @@ class ReportCommentController extends Controller
             abort(403);
         }
 
-        // Additional Authorization Checks
         $current_session_id = $this->getSchoolCurrentSession();
 
         $promotion = Promotion::where('student_id', $request->student_id)
