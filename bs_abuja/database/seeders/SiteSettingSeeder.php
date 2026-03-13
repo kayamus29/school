@@ -17,7 +17,7 @@ class SiteSettingSeeder extends Seeder
         SiteSetting::firstOrCreate(
             ['id' => 1],
             [
-                'school_name' => 'Unifiedtransform',
+                'school_name' => 'Auracle Technologies',
                 'primary_color' => '#3490dc',
                 'secondary_color' => '#ffffff',
                 'geo_range' => 500,

@@ -52,7 +52,7 @@ class AppServiceProvider extends ServiceProvider
             if (!$site_setting) {
                 // Fallback to default object if DB record is missing
                 $site_setting = (object) [
-                    'school_name' => config('app.name', 'Unifiedtransform'),
+                    'school_name' => config('app.name', 'Auracle Technologies'),
                     'primary_color' => '#3490dc',
                     'secondary_color' => '#ffffff',
                     'school_logo_path' => null,

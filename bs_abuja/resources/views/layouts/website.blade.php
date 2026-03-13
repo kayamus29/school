@@ -70,7 +70,7 @@
         <div class="container">
             <a class="navbar-brand" href="{{ route('website.home') }}">
                 <i class="bi bi-mortarboard-fill text-primary"></i>
-                {{ config('app.name', 'Unifiedtransform') }}
+                {{ config('app.name', 'Auracle Technologies') }}
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>

@@ -23,7 +23,7 @@ class SiteSettingController extends Controller
         $setting = SiteSetting::first();
         if (!$setting) {
             $setting = SiteSetting::create([
-                'school_name' => config('app.name', 'Unifiedtransform'),
+                'school_name' => config('app.name', 'Auracle Technologies'),
                 'primary_color' => '#3490dc',
                 'secondary_color' => '#ffffff',
             ]);

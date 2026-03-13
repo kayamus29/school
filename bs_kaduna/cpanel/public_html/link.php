@@ -1,6 +1,6 @@
 <?php
 /**
- * Unifiedtransform Storage Link Utility
+ * Auracle Technologies Storage Link Utility
  * Visit yourdomain.com/link.php to run this once.
  */
 

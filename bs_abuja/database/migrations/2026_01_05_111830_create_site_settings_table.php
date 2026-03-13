@@ -15,7 +15,7 @@ class CreateSiteSettingsTable extends Migration
     {
         Schema::create('site_settings', function (Blueprint $table) {
             $table->id();
-            $table->string('school_name')->default('Unifiedtransform');
+            $table->string('school_name')->default('Auracle Technologies');
             $table->string('school_logo_path')->nullable();
             $table->string('login_background_path')->nullable();
             $table->string('primary_color')->default('#3490dc'); // Default Bootstrap blue

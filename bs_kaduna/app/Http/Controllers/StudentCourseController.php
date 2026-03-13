@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Interfaces\SchoolSessionInterface;
 use App\Models\Course;
 use App\Models\Promotion;
 use Illuminate\Http\Request;
@@ -14,6 +15,13 @@ use App\Models\StudentCourseExclusion;
 class StudentCourseController extends Controller
 {
     use SchoolSession;
+
+    protected $schoolSessionRepository;
+
+    public function __construct(SchoolSessionInterface $schoolSessionRepository)
+    {
+        $this->schoolSessionRepository = $schoolSessionRepository;
+    }
 
     public function store(Request $request)
     {
