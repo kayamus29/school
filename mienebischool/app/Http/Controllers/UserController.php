@@ -14,6 +14,9 @@ use App\Http\Requests\TeacherStoreRequest;
 use App\Interfaces\SchoolSessionInterface;
 use App\Repositories\StudentParentInfoRepository;
 use App\Models\AssignedTeacher;
+use App\Models\Course;
+use App\Models\Section;
+use App\Models\StudentCourseExclusion;
 use Illuminate\Support\Facades\Auth;
 
 use App\Interfaces\WalletServiceInterface;
@@ -39,7 +42,6 @@ class UserController extends Controller
         WalletServiceInterface $walletService
     ) {
         $this->middleware(['can:view-student-list']);
-        $this->middleware(['can:edit student'])->only(['editStudent', 'updateStudent']);
         $this->middleware(['role:Admin'])->only(['showExportForm', 'exportStudents']);
 
         $this->userRepository = $userRepository;
@@ -72,6 +74,7 @@ class UserController extends Controller
     {
         $user = Auth::user();
         $current_school_session_id = $this->getSchoolCurrentSession();
+        $editableStudentScopes = [];
 
         $class_id = $request->query('class_id', 0);
         $section_id = $request->query('section_id', 0);
@@ -163,6 +166,18 @@ class UserController extends Controller
                     ->where('session_id', $current_school_session_id)
                     ->pluck('class_id');
 
+                $editableStudentScopes = AssignedTeacher::query()
+                    ->where('teacher_id', $user->id)
+                    ->where('session_id', $current_school_session_id)
+                    ->sectionLeadership()
+                    ->get(['class_id', 'section_id'])
+                    ->map(function ($assignment) {
+                        return (int) $assignment->class_id . ':' . ($assignment->section_id ? (int) $assignment->section_id : '*');
+                    })
+                    ->unique()
+                    ->values()
+                    ->all();
+
                 $school_classes = $this->schoolClassRepository->getAllBySession($current_school_session_id)
                     ->whereIn('id', $assignedClassIds);
             } else {
@@ -192,7 +207,8 @@ class UserController extends Controller
                 'context' => $context,
                 'course_id' => $course_id,
                 'class_id' => $class_id,
-                'section_id' => $section_id
+                'section_id' => $section_id,
+                'editableStudentScopes' => $editableStudentScopes,
             ];
 
             \Illuminate\Support\Facades\Log::info("Returning View", [
@@ -216,11 +232,44 @@ class UserController extends Controller
         $current_school_session_id = $this->getSchoolCurrentSession();
         $promotion_info = $this->promotionRepository->getPromotionInfoById($current_school_session_id, $id);
         $walletBalance = $this->walletService->getBalance($id);
+        $allCourses = collect();
+        $activeCourses = collect();
+        $removedCourses = collect();
+        $canManageStudentSubjects = false;
+
+        if ($promotion_info) {
+            $allCourses = Course::where('class_id', $promotion_info->class_id)
+                ->where('session_id', $current_school_session_id)
+                ->orderBy('course_name')
+                ->get();
+
+            $removedCourseIds = StudentCourseExclusion::excludedCourseIdsForStudent($id, $current_school_session_id);
+            $activeCourses = $allCourses->reject(fn ($course) => in_array((int) $course->id, $removedCourseIds, true))->values();
+            $removedCourses = StudentCourseExclusion::with(['course', 'remover'])
+                ->where('student_id', $id)
+                ->where('session_id', $current_school_session_id)
+                ->get();
+        }
+
+        if (Auth::user()->hasRole('Admin')) {
+            $canManageStudentSubjects = true;
+        } elseif ($promotion_info && Auth::user()->hasRole('Teacher')) {
+            $canManageStudentSubjects = AssignedTeacher::query()
+                ->where('teacher_id', Auth::id())
+                ->where('session_id', $current_school_session_id)
+                ->where('class_id', $promotion_info->class_id)
+                ->where('section_id', $promotion_info->section_id)
+                ->whereNull('course_id')
+                ->exists();
+        }
 
         $data = [
             'student' => $student,
             'promotion_info' => $promotion_info,
-            'walletBalance' => $walletBalance
+            'walletBalance' => $walletBalance,
+            'activeCourses' => $activeCourses,
+            'removedCourses' => $removedCourses,
+            'canManageStudentSubjects' => $canManageStudentSubjects,
         ];
 
         return view('students.profile', $data);
@@ -273,11 +322,23 @@ class UserController extends Controller
         $parent_info = $this->studentParentInfoRepository->getParentInfo($student_id);
         $current_school_session_id = $this->getSchoolCurrentSession();
         $promotion_info = $this->promotionRepository->getPromotionInfoById($current_school_session_id, $student_id);
+        $this->authorizeStudentEditing($promotion_info?->class_id, $promotion_info?->section_id);
+        $sections = collect();
+
+        if ($promotion_info?->class_id) {
+            $sections = Section::query()
+                ->where('session_id', $current_school_session_id)
+                ->where('class_id', $promotion_info->class_id)
+                ->orderBy('section_name')
+                ->get();
+        }
 
         $data = [
             'student' => $student,
             'parent_info' => $parent_info,
             'promotion_info' => $promotion_info,
+            'sections' => $sections,
+            'canChangeSection' => $this->canChangeStudentSection($promotion_info?->class_id),
         ];
         return view('students.edit', $data);
     }
@@ -285,12 +346,109 @@ class UserController extends Controller
     public function updateStudent(Request $request)
     {
         try {
-            $this->userRepository->updateStudent($request->toArray());
+            $studentId = (int) $request->input('student_id');
+            $current_school_session_id = $this->getSchoolCurrentSession();
+            $promotion_info = $this->promotionRepository->getPromotionInfoById($current_school_session_id, $studentId);
+            $this->authorizeStudentEditing($promotion_info?->class_id, $promotion_info?->section_id);
+            $canChangeSection = $this->canChangeStudentSection($promotion_info?->class_id);
+
+            $validated = $request->validate([
+                'first_name' => 'required|string',
+                'last_name' => 'required|string',
+                'email' => 'required|string|email|max:255|unique:users,email,' . $studentId,
+                'gender' => 'required|string',
+                'nationality' => 'required|string',
+                'phone' => 'required|string',
+                'address' => 'required|string',
+                'address2' => 'nullable|string',
+                'city' => 'required|string',
+                'zip' => 'required|string',
+                'birthday' => 'required|date',
+                'religion' => 'required|string',
+                'blood_type' => 'required|string',
+                'father_name' => 'required|string',
+                'father_phone' => 'required|string',
+                'mother_name' => 'required|string',
+                'mother_phone' => 'required|string',
+                'guardian_email' => 'nullable|email|max:255',
+                'guardian_phone' => 'nullable|string|max:255',
+                'parent_address' => 'required|string',
+                'id_card_number' => 'required|string',
+                'section_id' => 'nullable|integer|exists:sections,id',
+            ]);
+
+            $validated['student_id'] = $studentId;
+            $validated['session_id'] = $current_school_session_id;
+
+            if ($canChangeSection && $request->filled('section_id')) {
+                $targetSection = Section::query()
+                    ->where('id', $request->input('section_id'))
+                    ->where('session_id', $current_school_session_id)
+                    ->where('class_id', $promotion_info?->class_id)
+                    ->first();
+
+                if (!$targetSection) {
+                    return back()->withInput()->withError('The selected section is invalid for this class.');
+                }
+
+                $validated['section_id'] = (int) $targetSection->id;
+            } else {
+                $validated['section_id'] = $promotion_info?->section_id;
+            }
+
+            $this->userRepository->updateStudent($validated);
 
             return back()->with('status', 'Student update was successful!');
         } catch (\Exception $e) {
             return back()->withError($e->getMessage());
         }
+    }
+
+    private function authorizeStudentEditing(?int $classId, ?int $sectionId): void
+    {
+        $user = Auth::user();
+
+        if ($user->hasRole('Admin')) {
+            return;
+        }
+
+        if (!$user->hasRole('Teacher') || !$classId || !$sectionId) {
+            abort(403, 'Teachers do not have access to edit this student.');
+        }
+
+        $current_school_session_id = $this->getSchoolCurrentSession();
+        $isAssigned = AssignedTeacher::query()
+            ->where('teacher_id', $user->id)
+            ->where('session_id', $current_school_session_id)
+            ->where('class_id', $classId)
+            ->forSectionAccess($sectionId)
+            ->sectionLeadership()
+            ->exists();
+
+        if (!$isAssigned) {
+            abort(403, 'Teachers do not have access to edit this student.');
+        }
+    }
+
+    private function canChangeStudentSection(?int $classId): bool
+    {
+        $user = Auth::user();
+
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        if (!$user->hasRole('Teacher') || !$classId) {
+            return false;
+        }
+
+        return AssignedTeacher::query()
+            ->where('teacher_id', $user->id)
+            ->where('session_id', $this->getSchoolCurrentSession())
+            ->where('class_id', $classId)
+            ->whereNull('section_id')
+            ->sectionLeadership()
+            ->exists();
     }
 
     public function editTeacher($teacher_id)

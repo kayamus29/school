@@ -51,8 +51,7 @@
                                                 @endif
                                             </td>
                                             <td>{{ $expense->requester->first_name ?? 'N/A' }}
-                                                {{ $expense->requester->last_name ?? '' }}
-                                            </td>
+                                                {{ $expense->requester->last_name ?? '' }}</td>
                                             <td>
                                                 <span
                                                     class="font-weight-bold text-danger">₦{{ number_format($expense->amount, 2) }}</span>
@@ -77,7 +76,7 @@
                                             </td>
                                             <td>
                                                 <div class="btn-group">
-                                                    @if(Auth::user()->hasAnyRole(['Admin', 'Accountant']) && $expense->status == 'pending')
+                                                    @if(Auth::user()->role == 'admin' && $expense->status == 'pending')
                                                         <button class="btn btn-sm btn-success" data-bs-toggle="modal"
                                                             data-bs-target="#approveModal{{$expense->id}}" title="Approve">
                                                             <i class="bi bi-check-lg"></i>
@@ -92,7 +91,7 @@
                                                         </button>
                                                     @endif
 
-                                                    @if($expense->status == 'pending' || Auth::user()->hasAnyRole(['Admin', 'Accountant']))
+                                                    @if($expense->status == 'pending' || Auth::user()->role == 'admin')
                                                         <form action="{{ route('accounting.expenses.destroy', $expense->id) }}"
                                                             method="POST" class="d-inline"
                                                             onsubmit="return confirm('Delete this request?');">
@@ -122,8 +121,7 @@
                                                                 <div class="modal-body">
                                                                     <p>Are you sure you want to approve
                                                                         <strong>₦{{ number_format($expense->amount, 2) }}</strong>
-                                                                        for "{{ $expense->title }}"?
-                                                                    </p>
+                                                                        for "{{ $expense->title }}"?</p>
                                                                     <div class="mb-3">
                                                                         <label class="form-label">Approval Notes</label>
                                                                         <textarea name="notes" class="form-control"

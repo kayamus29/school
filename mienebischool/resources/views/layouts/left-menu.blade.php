@@ -14,6 +14,11 @@
                         class="ms-auto bi bi-grid"></i> <span
                         class="ms-1 d-inline d-sm-none d-md-none d-xl-inline">{{ __('Dashboard') }}</span></a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('tutorials.index') ? 'active' : '' }}" href="{{ route('tutorials.index') }}"><i
+                        class="bi bi-journal-bookmark"></i> <span
+                        class="ms-1 d-inline d-sm-none d-md-none d-xl-inline">Tutorials</span></a>
+            </li>
             @can('staff check-in')
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('staff.attendance.index') ? 'active' : '' }}" href="{{route('staff.attendance.index')}}">
@@ -109,10 +114,15 @@
             @endif
             @if(Auth::user()->hasRole('Teacher'))
                 <li class="nav-item">
-                    <a class="nav-link {{ (request()->is('courses/teacher*') || request()->is('courses/assignments*')) ? 'active' : '' }}"
+                    <a class="nav-link {{ (request()->is('courses/teacher*') || request()->is('courses/assignments*') || request()->is('lesson-plans*')) ? 'active' : '' }}"
                         href="{{route('course.teacher.list.show', ['teacher_id' => Auth::user()->id])}}"><i
                             class="bi bi-journal-check"></i> <span
                             class="ms-1 d-inline d-sm-none d-md-none d-xl-inline">My Courses</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->is('lesson-plans*') ? 'active' : '' }}"
+                        href="{{ route('lesson-plans.index') }}"><i class="bi bi-journal-richtext"></i> <span
+                            class="ms-1 d-inline d-sm-none d-md-none d-xl-inline">Lesson Plans</span></a>
                 </li>
             @endif
             @if(Auth::user()->hasRole('Student'))
@@ -209,9 +219,19 @@
             @endif
             @if (Auth::user()->hasRole('Admin'))
                 <li class="nav-item">
+                    <a class="nav-link {{ request()->is('lesson-plans*') ? 'active' : '' }}"
+                        href="{{ route('lesson-plans.index') }}"><i class="bi bi-journal-richtext"></i> <span
+                            class="ms-1 d-inline d-sm-none d-md-none d-xl-inline">Lesson Plans</span></a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {{ request()->is('notice*') ? 'active' : '' }}" href="{{route('notice.create')}}"><i
                             class="bi bi-megaphone"></i> <span
                             class="ms-1 d-inline d-sm-none d-md-none d-xl-inline">Notice</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('end-term-updates.*') ? 'active' : '' }}" href="{{ route('end-term-updates.edit') }}"><i
+                            class="bi bi-newspaper"></i> <span
+                            class="ms-1 d-inline d-sm-none d-md-none d-xl-inline">End of Term</span></a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is('calendar-event*') ? 'active' : '' }}"
@@ -318,6 +338,13 @@
                     </ul>
                 </li>
             @endif
+            @if (Auth::user()->hasAnyRole(['Admin', 'Teacher']))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->is('communications*') ? 'active' : '' }}"
+                        href="{{ route('communications.index') }}"><i class="bi bi-envelope-paper"></i> <span
+                            class="ms-1 d-inline d-sm-none d-md-none d-xl-inline">Communication</span></a>
+                </li>
+            @endif
             @if (Auth::user()->hasRole('Admin'))
                 <li class="nav-item">
                     <a type="button" href="#staff-submenu" data-bs-toggle="collapse"
@@ -344,7 +371,7 @@
                 @endcan
             @endif
 
-            @if(Auth::user()->hasRole('Staff') || Auth::user()->role == 'staff' || Auth::user()->hasRole('Teacher') || Auth::user()->role == 'teacher')
+            @if(Auth::user()->hasRole('Staff') || Auth::user()->role == 'staff')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('accounting.expenses.my') ? 'active' : '' }}" href="{{route('accounting.expenses.my')}}">
                         <i class="bi bi-receipt"></i> <span class="ms-1 d-inline d-sm-none d-md-none d-xl-inline">My Expenses</span>

@@ -206,7 +206,7 @@
                                                     @php
                                                         $colorClass = $score >= 80 ? 'success' : ($score >= 60 ? 'primary' : ($score >= 50 ? 'warning' : 'danger'));
                                                     @endphp
-                                                    <span class="badge bg-{{ $colorClass }} text-white px-3 py-2 fw-semibold clickable-mark" 
+                                                    <span class="badge bg-{{ $colorClass }} bg-opacity-10 text-{{ $colorClass }} px-3 py-2 fw-semibold clickable-mark" 
                                                         style="cursor: pointer; font-size: 0.95rem;"
                                                         data-student-id="{{ $student->id }}" 
                                                         data-course-id="{{ $course_id }}"

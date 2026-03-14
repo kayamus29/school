@@ -30,4 +30,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'bulksms' => [
+        'base_url' => env('BULK_SMS_BASE_URL', 'https://www.bulksmsnigeria.com/api'),
+        'api_token' => env('BULK_SMS_API_TOKEN'),
+        'sender_id' => env('BULK_SMS_SENDER_ID'),
+    ],
+
 ];

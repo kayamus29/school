@@ -1,303 +1,351 @@
 @extends('layouts.app')
 
 @section('content')
-    <link rel="stylesheet" href="{{ asset('css/results-dashboard.css') }}">
+    @include('results.partials.report-theme')
 
-    <div class="container">
+    @php
+        $studentInitials = strtoupper(substr($student->first_name ?? 'S', 0, 1) . substr($student->last_name ?? 'R', 0, 1));
+        $schoolLogoPath = $site_setting->school_logo_path ?? null;
+        $schoolLogo = !empty($schoolLogoPath)
+            ? (\Illuminate\Support\Str::startsWith($schoolLogoPath, ['http://', 'https://', '/']) ? $schoolLogoPath : asset($schoolLogoPath))
+            : null;
+        $schoolName = $site_setting->school_name ?? config('app.name');
+        $schoolContact = collect([
+            $site_setting->school_address ?? null,
+            $site_setting->school_phone ?? null,
+            $site_setting->school_email ?? null,
+        ])->filter()->implode(' | ');
+        $sessionName = optional($selectedSession ?? optional($promotion)->session)->session_name ?? 'Current Session';
+        $className = optional(optional($promotion)->schoolClass)->class_name ?? 'Not Assigned';
+        $sectionName = optional(optional($promotion)->section)->section_name ?? null;
+        $gender = ucfirst($student->gender ?? 'N/A');
+        $birthday = !empty($student->birthday) ? \Carbon\Carbon::parse($student->birthday)->format('d M Y') : 'N/A';
+        $displaySemesters = $visibleSemesters ?? $semesters;
+
+        $flatScores = collect($results ?? [])->flatMap(function ($courseResults) use ($displaySemesters) {
+            $visibleSemesterIds = $displaySemesters->pluck('id')->all();
+
+            return collect($courseResults)
+                ->whereIn('semester_id', $visibleSemesterIds)
+                ->pluck('final_marks');
+        })->filter(fn($score) => $score !== null);
+
+        $overallAverage = $flatScores->count() ? round($flatScores->avg(), 1) : 0;
+        $passCount = $flatScores->filter(fn($score) => $score >= 50)->count();
+        $failCount = $flatScores->filter(fn($score) => $score < 50)->count();
+
+        $affectiveLabels = [
+            'punctuality' => 'Punctuality',
+            'neatness' => 'Neatness',
+            'politeness' => 'Politeness',
+            'honesty' => 'Honesty',
+            'performance' => 'Performance',
+            'attentiveness' => 'Attentiveness',
+            'perseverance' => 'Perseverance',
+            'speaking' => 'Speaking',
+            'writing' => 'Writing',
+        ];
+
+        $gradeBadge = function ($score) {
+            if ($score >= 80) return ['A', 'report-grade-a', 'Outstanding', 'var(--report-green)'];
+            if ($score >= 70) return ['B', 'report-grade-b', 'Very Good', '#2a5abc'];
+            if ($score >= 60) return ['C', 'report-grade-c', 'Good', '#9b6b00'];
+            if ($score >= 50) return ['D', 'report-grade-d', 'Average', 'var(--report-amber)'];
+            return ['F', 'report-grade-f', 'Below Pass', 'var(--report-red)'];
+        };
+    @endphp
+
+    <div class="container report-view">
         <div class="row justify-content-start">
             @include('layouts.left-menu')
 
             <div class="col-xs-12 col-sm-12 col-md-9 col-lg-10">
                 <div class="row pt-3">
                     <div class="col ps-4">
-                <!-- Header Section -->
-                <div class="d-flex align-items-center justify-content-between mb-4">
-                    <div>
-                        <h1 class="h3 mb-1 fw-bold text-dark">
-                            <i class="bi bi-graph-up-arrow text-primary me-2"></i>Academic Performance
-                        </h1>
-                        <p class="text-muted small mb-0">
-                            @if(isset($promotion))
-                                {{ $promotion->schoolClass->class_name }} • {{ $promotion->session->session_name }}
-                            @else
-                                {{ $session_id }} <!-- Fallback if needed, or just empty -->
-                            @endif
-                        </p>
-                    </div>
-                    <div class="no-print">
-                        <button onclick="window.print()" class="btn btn-outline-primary shadow-sm px-4" {{ isset($withheld) && $withheld ? 'disabled' : '' }}>
-                            <i class="bi bi-printer me-2"></i>Print Transcript
-                        </button>
-                    </div>
-                </div>
-
-                @if(isset($withheld) && $withheld)
-                <!-- Financial Withholding Alert -->
-                <div class="alert alert-danger border-0 shadow-sm mb-4">
-                    <div class="d-flex align-items-start">
-                        <div class="bg-white bg-opacity-25 p-3 rounded me-3">
-                            <i class="bi bi-exclamation-octagon-fill fs-2"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h4 class="alert-heading fw-bold mb-2">Academic Records Withheld</h4>
-                            <p class="mb-2">Your academic performance records are temporarily restricted due to an outstanding financial balance.</p>
-                            <hr class="my-3 border-white border-opacity-25">
-                            <p class="mb-0 small">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Please visit the Bursar's Office or settle your account balance to regain full access to your academic records.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                @else
-                <!-- Summary Statistics -->
-                <div class="row g-3 mb-4">
-                    @php
-                        $grandTotal = 0;
-                        $totalEntries = 0;
-                        $passCount = 0;
-                        $failCount = 0;
-                        
-                        foreach ($results as $cResults) {
-                            foreach ($cResults as $mark) {
-                                $grandTotal += $mark->final_marks;
-                                $totalEntries++;
-                                if ($mark->final_marks >= 50) {
-                                    $passCount++;
-                                } else {
-                                    $failCount++;
-                                }
-                            }
-                        }
-                        $totalAvg = $totalEntries > 0 ? ($grandTotal / $totalEntries) : 0;
-                    @endphp
-
-                    <div class="col-md-3">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <p class="text-muted text-uppercase small mb-1">Overall Average</p>
-                                        <h3 class="mb-0 fw-bold {{ $totalAvg >= 70 ? 'text-success' : ($totalAvg >= 50 ? 'text-warning' : 'text-danger') }}">
-                                            {{ number_format($totalAvg, 1) }}%
-                                        </h3>
-                                    </div>
-                                    <div class="bg-primary bg-opacity-10 p-3 rounded">
-                                        <i class="bi bi-trophy-fill text-primary fs-4"></i>
-                                    </div>
+                        @if(isset($withheld) && $withheld)
+                            <div class="alert alert-danger border-0 shadow-sm mb-4">
+                                <h4 class="fw-bold mb-2">Academic Records Withheld</h4>
+                                <p class="mb-0">Please settle the outstanding financial balance to view this report card.</p>
+                            </div>
+                        @elseif(isset($error))
+                            <div class="alert alert-warning border-0 shadow-sm mb-4">
+                                <p class="mb-0">{{ $error }}</p>
+                            </div>
+                        @else
+                            <div class="card shadow-sm border-0 mb-4 report-hidden-print">
+                                <div class="card-body">
+                                    <form action="{{ route('results.student') }}" method="GET" class="row g-3 align-items-end">
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Session</label>
+                                            <select name="session_id" class="form-select" onchange="this.form.submit()">
+                                                @foreach($availableSessions as $session)
+                                                    <option value="{{ $session->id }}" {{ (int) $session_id === (int) $session->id ? 'selected' : '' }}>
+                                                        {{ $session->session_name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Term</label>
+                                            <select name="semester_id" class="form-select" onchange="this.form.submit()">
+                                                <option value="">All Terms</option>
+                                                @foreach($semesters as $semester)
+                                                    <option value="{{ $semester->id }}" {{ (int) $selectedSemesterId === (int) $semester->id ? 'selected' : '' }}>
+                                                        {{ $semester->semester_name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <div class="col-md-3">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <p class="text-muted text-uppercase small mb-1">Courses Passed</p>
-                                        <h3 class="mb-0 fw-bold text-success">{{ $passCount }}</h3>
+                            <div class="report-toolbar report-hidden-print">
+                                <button onclick="window.print()" class="btn btn-outline-primary shadow-sm px-4">
+                                    <i class="bi bi-printer me-2"></i>Print Report
+                                </button>
+                            </div>
+
+                            <div class="report-page">
+                                <div class="report-header">
+                                    <div class="report-logo-wrap">
+                                        @if($schoolLogo)
+                                            <img src="{{ $schoolLogo }}" alt="{{ $schoolName }}">
+                                        @else
+                                            {{ strtoupper(substr($schoolName, 0, 3)) }}
+                                        @endif
                                     </div>
-                                    <div class="bg-success bg-opacity-10 p-3 rounded">
-                                        <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                    <div class="report-school-info">
+                                        <div class="report-school-name">{{ $schoolName }}</div>
+                                        <div class="report-school-tagline">Academic Excellence Report</div>
+                                        <div class="report-school-contact">
+                                            {{ $schoolContact ?: 'Student portal report card for the active academic session.' }}
+                                        </div>
+                                    </div>
+                                    <div class="report-badge-box">
+                                        <span class="report-badge-label">Student Report</span>
+                                        <span class="report-badge-term">{{ $reportTermLabel ?? 'Session Overview' }}</span>
+                                        <span class="report-badge-session">{{ $sessionName }}</span>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="col-md-3">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <p class="text-muted text-uppercase small mb-1">Courses Failed</p>
-                                        <h3 class="mb-0 fw-bold text-danger">{{ $failCount }}</h3>
+                                <div class="report-gold-rule"></div>
+
+                                <div class="report-student-banner">
+                                    <div class="report-avatar">
+                                        @if(!empty($student->photo))
+                                            <img src="{{ asset('storage/' . $student->photo) }}" alt="{{ $student->first_name }}">
+                                        @else
+                                            {{ $studentInitials }}
+                                        @endif
                                     </div>
-                                    <div class="bg-danger bg-opacity-10 p-3 rounded">
-                                        <i class="bi bi-x-circle-fill text-danger fs-4"></i>
+                                    <div class="report-student-details">
+                                        <div class="report-student-name">{{ $student->first_name }} {{ $student->last_name }}</div>
+                                        <div class="report-student-meta">
+                                            <span>Student ID: <strong>{{ optional($promotion)->id_card_number ?? $student->id }}</strong></span>
+                                            <span>Class: <strong>{{ $className }}{{ $sectionName ? ' (' . $sectionName . ')' : '' }}</strong></span>
+                                            <span>Gender: <strong>{{ $gender }}</strong></span>
+                                            <span>Date of Birth: <strong>{{ $birthday }}</strong></span>
+                                        </div>
+                                    </div>
+                                    <div class="report-summary-pills">
+                                        <div class="report-pill avg">
+                                            <span class="report-pill-value">{{ number_format($overallAverage, 1) }}%</span>
+                                            <span class="report-pill-label">Average</span>
+                                        </div>
+                                        <div class="report-pill pass">
+                                            <span class="report-pill-value">{{ $passCount }}</span>
+                                            <span class="report-pill-label">Passed</span>
+                                        </div>
+                                        <div class="report-pill fail">
+                                            <span class="report-pill-value">{{ $failCount }}</span>
+                                            <span class="report-pill-label">Failed</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="col-md-3">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <p class="text-muted text-uppercase small mb-1">Total Courses</p>
-                                        <h3 class="mb-0 fw-bold">{{ count($courses) }}</h3>
+                                <div class="report-body">
+                                    <div class="report-section-title">Academic Performance</div>
+                                    <div class="report-info-banner mb-4">
+                                        Click any score to view the detailed assessment breakdown for that subject and term.
                                     </div>
-                                    <div class="bg-info bg-opacity-10 p-3 rounded">
-                                        <i class="bi bi-journal-text text-info fs-4"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Info Alert -->
-                <div class="alert alert-info border-0 shadow-sm mb-4">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-info-circle-fill me-3 fs-5"></i>
-                        <div>
-                            <strong>Interactive Results:</strong> Click on any score to view detailed assessment breakdown including Continuous Assessment (CA) and Exam components.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Performance Table -->
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white border-bottom py-3">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <h5 class="mb-0 fw-bold text-dark">
-                                <i class="bi bi-table me-2 text-primary"></i>Course Performance Summary
-                            </h5>
-                            <span class="badge bg-light text-dark">{{ count($courses) }} Courses</span>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="bg-light">
-                                    <tr>
-                                        <th class="ps-4 py-3 fw-semibold">Course</th>
-                                        @foreach($semesters as $semester)
-                                            <th class="text-center py-3 fw-semibold">{{ $semester->semester_name }}</th>
-                                        @endforeach
-                                        <th class="text-center py-3 fw-semibold bg-light">Annual Total</th>
-                                        <th class="text-center py-3 fw-semibold bg-light">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($courses as $course)
-                                        <tr class="border-bottom">
-                                            <td class="ps-4 py-3">
-                                                <div class="fw-semibold text-dark">{{ $course->course_name }}</div>
-                                                <div class="text-muted small">{{ $course->course_type }}</div>
-                                            </td>
-
-                                            @php 
-                                                $annualTotal = 0;
-                                                $termsWithMarks = 0; 
-                                            @endphp
-
-                                            @foreach($semesters as $semester)
-                                                @php
-                                                    $mark = isset($results[$course->id]) ? $results[$course->id]->where('semester_id', $semester->id)->first() : null;
-                                                    $score = $mark ? $mark->final_marks : null;
-                                                    if ($score !== null) {
-                                                        $annualTotal += $score;
-                                                        $termsWithMarks++;
-                                                    }
-                                                @endphp
-                                                <td class="text-center py-3">
-                                                    @if($score !== null)
+                                    <div class="report-table-wrap mb-4">
+                                        <div class="table-responsive">
+                                            <table class="report-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width: 28%;">Subject</th>
+                                                        @foreach($displaySemesters as $semester)
+                                                            <th class="text-center">{{ $semester->semester_name }}</th>
+                                                        @endforeach
+                                                        <th class="text-center">Average</th>
+                                                        <th class="text-center" style="width: 14%;">Progress</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($courses as $course)
                                                         @php
-                                                            $colorClass = $score >= 80 ? 'success' : ($score >= 60 ? 'primary' : ($score >= 50 ? 'warning' : 'danger'));
+                                                            $courseMarks = collect($results[$course->id] ?? []);
+                                                            $termScores = [];
+                                                            foreach ($displaySemesters as $semester) {
+                                                                $termScores[$semester->id] = optional($courseMarks->where('semester_id', $semester->id)->first())->final_marks;
+                                                            }
+                                                            $existingScores = collect($termScores)->filter(fn($score) => $score !== null);
+                                                            $courseAverage = $existingScores->count() ? round($existingScores->avg(), 1) : null;
+                                                            [$letterGrade, $gradeClass, $remark, $progressColor] = $gradeBadge($courseAverage ?? 0);
+                                                            $tagClass = in_array(strtolower($course->course_type), ['core']) ? 'report-tag-core' : 'report-tag-elective';
                                                         @endphp
-                                                        <span class="badge bg-{{ $colorClass }} text-white px-3 py-2 fw-semibold clickable-mark" 
-                                                            style="cursor: pointer; font-size: 0.95rem;"
-                                                            data-student-id="{{ $student->id }}" 
-                                                            data-course-id="{{ $course->id }}"
-                                                            data-semester-id="{{ $semester->id }}">
-                                                            {{ number_format($score, 1) }}
-                                                        </span>
-                                                        @if(isset($mark->is_provisional) && $mark->is_provisional)
-                                                            <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">Provisional</span>
-                                                        @endif
-                                                    @else
-                                                        <span class="text-muted">—</span>
-                                                    @endif
-                                                </td>
-                                            @endforeach
+                                                        <tr>
+                                                            <td>
+                                                                {{ $course->course_name }}
+                                                                <span class="report-tag {{ $tagClass }}">{{ $course->course_type }}</span>
+                                                            </td>
+                                                            @foreach($displaySemesters as $semester)
+                                                                @php
+                                                                    $mark = $courseMarks->where('semester_id', $semester->id)->first();
+                                                                    $score = optional($mark)->final_marks;
+                                                                @endphp
+                                                                <td class="text-center">
+                                                                    @if($score !== null)
+                                                                        <span class="report-score-cell clickable-mark"
+                                                                            style="cursor:pointer;"
+                                                                            data-student-id="{{ $student->id }}"
+                                                                            data-course-id="{{ $course->id }}"
+                                                                            data-semester-id="{{ $semester->id }}"
+                                                                            data-session-id="{{ $session_id }}">
+                                                                            {{ number_format($score, 1) }}
+                                                                        </span>
+                                                                    @else
+                                                                        <span class="text-muted">—</span>
+                                                                    @endif
+                                                                </td>
+                                                            @endforeach
+                                                            <td class="text-center">
+                                                                @if($courseAverage !== null)
+                                                                    <span class="report-score-cell">{{ number_format($courseAverage, 1) }}</span>
+                                                                    <span class="report-grade-badge {{ $gradeClass }} ms-2">{{ $letterGrade }}</span>
+                                                                @else
+                                                                    <span class="text-muted">N/A</span>
+                                                                @endif
+                                                            </td>
+                                                            <td class="text-center">
+                                                                @if($courseAverage !== null)
+                                                                    <div class="report-progress">
+                                                                        <div class="report-progress-fill" style="width: {{ max(0, min(100, $courseAverage)) }}%; background: {{ $progressColor }}"></div>
+                                                                    </div>
+                                                                @else
+                                                                    <span class="text-muted">—</span>
+                                                                @endif
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
 
-                                            <td class="text-center py-3 bg-light">
-                                                <span class="fw-bold text-dark">
-                                                    {{ $termsWithMarks > 0 ? number_format($annualTotal, 1) : '0.0' }}
-                                                </span>
-                                            </td>
-                                            <td class="text-center py-3 bg-light">
-                                                @php
-                                                    $avg = $termsWithMarks > 0 ? ($annualTotal / $termsWithMarks) : 0;
-                                                @endphp
-                                                @if($termsWithMarks > 0)
-                                                    <span class="badge {{ $avg >= 50 ? 'bg-success' : 'bg-danger' }} px-3 py-2">
-                                                        {{ $avg >= 50 ? 'PASS' : 'FAIL' }}
-                                                    </span>
-                                                @else
-                                                    <span class="badge bg-secondary px-3 py-2">N/A</span>
-                                                @endif
-                                            </td>
-                                        </tr>
+                                    @foreach($displaySemesters as $semester)
+                                        @php
+                                            $attendanceSummary = isset($attendanceSummaries) ? $attendanceSummaries->get($semester->id) : null;
+                                            $comment = isset($comments) ? $comments->get($semester->id) : null;
+                                            $endTermUpdate = isset($endTermUpdates) ? $endTermUpdates->get($semester->id) : null;
+                                            $affective = $comment && is_array($comment->affective_scores) ? $comment->affective_scores : [];
+                                            $daysAbsent = $attendanceSummary ? max(0, (int) $attendanceSummary['total_school_days'] - (int) $attendanceSummary['days_present']) : null;
+                                        @endphp
+                                        <div class="report-block report-term-card">
+                                            <div class="report-term-title">{{ $semester->semester_name }}</div>
+
+                                            @if($attendanceSummary)
+                                                <div class="report-section-title">Attendance Record</div>
+                                                <div class="report-attendance-row">
+                                                    <div class="report-att-box">
+                                                        <span class="report-att-num">{{ $attendanceSummary['total_school_days'] }}</span>
+                                                        <span class="report-att-lbl">School Days</span>
+                                                    </div>
+                                                    <div class="report-att-box">
+                                                        <span class="report-att-num" style="color: var(--report-green)">{{ $attendanceSummary['days_present'] }}</span>
+                                                        <span class="report-att-lbl">Days Present</span>
+                                                    </div>
+                                                    <div class="report-att-box">
+                                                        <span class="report-att-num" style="color: var(--report-red)">{{ $daysAbsent }}</span>
+                                                        <span class="report-att-lbl">Days Absent</span>
+                                                    </div>
+                                                    <div class="report-att-box">
+                                                        <span class="report-att-num" style="color: var(--report-gold)">{{ $attendanceSummary['attendance_percentage'] !== null ? $attendanceSummary['attendance_percentage'] . '%' : 'N/A' }}</span>
+                                                        <span class="report-att-lbl">Attendance Rate</span>
+                                                    </div>
+                                                </div>
+                                            @endif
+
+                                            <div class="report-section-title">Psychomotor & Affective Skills</div>
+                                            <div class="report-psycho-grid">
+                                                @foreach($affectiveLabels as $key => $label)
+                                                    @php $score = (int) ($affective[$key] ?? 0); @endphp
+                                                    <div class="report-psycho-item">
+                                                        <div class="report-psycho-label">{{ $label }}</div>
+                                                        <div class="report-stars">
+                                                            @for($i = 1; $i <= 5; $i++)
+                                                                <span class="{{ $i <= $score ? '' : 'empty' }}">★</span>
+                                                            @endfor
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                            <div class="report-rating-key">
+                                                <span>1 – Poor</span>
+                                                <span>2 – Fair</span>
+                                                <span>3 – Good</span>
+                                                <span>4 – Very Good</span>
+                                                <span>5 – Excellent</span>
+                                            </div>
+
+                                            <div class="report-section-title">Remarks & Comments</div>
+                                            <div class="report-comments-grid">
+                                                <div class="report-comment-box">
+                                                    <span class="report-comment-label">Class Teacher's Remark</span>
+                                                    <p>{{ $comment && $comment->teacher_comment ? $comment->teacher_comment : 'No remark yet.' }}</p>
+                                                </div>
+                                                <div class="report-comment-box">
+                                                    <span class="report-comment-label">Principal's Remark</span>
+                                                    <p>{{ $comment && $comment->principal_comment ? $comment->principal_comment : 'No remark yet.' }}</p>
+                                                </div>
+                                            </div>
+
+                                            @if($endTermUpdate)
+                                                <div class="report-section-title">News & Events</div>
+                                                <div class="report-next-term-card">
+                                                    <div class="report-next-term-label">{{ $endTermUpdate->title ?: ($semester->semester_name . ' Update') }}</div>
+                                                    <div class="report-next-term-note">
+                                                        School news, announcements, and next-term details are available on a separate page.
+                                                    </div>
+                                                    <div class="mt-3 report-hidden-print">
+                                                        <a href="{{ route('student.end-term-news', ['session_id' => $session_id, 'semester_id' => $semester->id]) }}" class="btn btn-outline-primary btn-sm">
+                                                            <i class="bi bi-box-arrow-up-right me-1"></i> Open News
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
                                     @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                                </div>
 
-                @endif
-
-                <!-- Remarks Section -->
-                <div class="card border-0 shadow-sm mt-4">
-                    <div class="card-header bg-white border-bottom py-3">
-                        <h5 class="mb-0 fw-bold text-dark">
-                            <i class="bi bi-chat-quote me-2 text-primary"></i>Term Remarks & Comments
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        @foreach($semesters as $semester)
-                            @php
-                                $comment = isset($comments) ? $comments->get($semester->id) : null;
-                            @endphp
-                            <div class="mb-4 {{ !$loop->last ? 'border-bottom pb-4' : '' }}">
-                                <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-calendar-event me-2"></i>{{ $semester->semester_name }}</h6>
-                                
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <div class="h-100 p-3 bg-light bg-opacity-50 rounded border">
-                                            <div class="d-flex align-items-center mb-2">
-                                                <i class="bi bi-person-badge text-primary me-2"></i>
-                                                <span class="text-uppercase small fw-bold text-muted">Class Teacher's Remark</span>
-                                            </div>
-                                            @if($comment && $comment->teacher_comment)
-                                                <p class="mb-0 text-dark fst-italic">"{{ $comment->teacher_comment }}"</p>
-                                            @else
-                                                <p class="mb-0 text-muted small fst-italic">No remark yet.</p>
-                                            @endif
-                                        </div>
+                                <div class="report-footer">
+                                    <div class="report-footer-left">
+                                        {{ $schoolName }}<br>
+                                        Generated on {{ now()->format('d F Y, h:i A') }}. Please retain for your records.
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="h-100 p-3 bg-light bg-opacity-50 rounded border">
-                                            <div class="d-flex align-items-center mb-2">
-                                                <i class="bi bi-person-check text-dark me-2"></i>
-                                                <span class="text-uppercase small fw-bold text-muted">Principal's Remark</span>
-                                            </div>
-                                            @if($comment && $comment->principal_comment)
-                                                <p class="mb-0 text-dark fst-italic">"{{ $comment->principal_comment }}"</p>
-                                            @else
-                                                <p class="mb-0 text-muted small fst-italic">No remark yet.</p>
-                                            @endif
-                                        </div>
-                                    </div>
+                                    <div class="report-footer-stamp">Official Report</div>
                                 </div>
                             </div>
-                        @endforeach
-                    </div>
-                </div>
+                        @endif
 
-                @include('layouts.footer')
+                        @include('layouts.footer')
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Breakdown Modal -->
     <div class="modal fade" id="breakdownModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">

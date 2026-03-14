@@ -22,6 +22,7 @@
                                     <tr>
                                         <th scope="col">System Name</th>
                                         <th scope="col">Class</th>
+                                        <th scope="col">Breakdown</th>
                                         <th scope="col">Semester</th>
                                         <th scope="col">Created At</th>
                                         <th scope="col">Actions</th>
@@ -38,6 +39,11 @@
                                                     @else
                                                         {{ $gradingSystem->schoolClasses->pluck('class_name')->implode(', ') }}
                                                     @endif
+                                                </td>
+                                                <td>
+                                                    {{ collect($gradingSystem->marks_breakdown ?? [])->map(function ($item) {
+                                                        return ($item['name'] ?? 'Component') . ': ' . ($item['weight'] ?? 0) . '%';
+                                                    })->implode(', ') }}
                                                 </td>
                                                 <td>{{$gradingSystem->semester->semester_name}}</td>
                                                 <td>{{$gradingSystem->created_at}}</td>

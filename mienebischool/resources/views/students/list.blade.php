@@ -40,7 +40,7 @@
                                 @endif
                                 <div class="col">
                                     <select onchange="getSections(this);" class="form-select" aria-label="Class"
-                                        name="class_id" required>
+                                        name="class_id" id="class-select" required>
                                         @isset($school_classes)
                                             <option selected disabled>Please select a class</option>
                                             @foreach ($school_classes as $school_class)
@@ -53,6 +53,7 @@
                                 </div>
                                 <div class="col">
                                     <select class="form-select" id="section-select" aria-label="Section" name="section_id"
+                                        data-current-section-id="{{ request()->query('section_id', 0) }}"
                                         required>
                                         <option value="{{request()->query('section_id')}}">
                                             {{request()->query('section_name')}}</option>
@@ -135,9 +136,16 @@
 
                                                         <a href="{{url('students/view/profile/' . $student->student->id)}}" role="button" class="btn btn-sm btn-outline-dark"><i class="bi bi-person-fill"></i> Profile</a>
                                                         
-                                                        @can('edit users')
+                                                        @php
+                                                            $teacherEditKey = $student->class_id . ':' . $student->section_id;
+                                                            $teacherClassWideEditKey = $student->class_id . ':*';
+                                                            $canEditStudent = Auth::user()->hasRole('Admin')
+                                                                || in_array($teacherEditKey, $editableStudentScopes ?? [], true)
+                                                                || in_array($teacherClassWideEditKey, $editableStudentScopes ?? [], true);
+                                                        @endphp
+                                                        @if($canEditStudent)
                                                             <a href="{{route('student.edit.show', ['id' => $student->student->id])}}" role="button" class="btn btn-sm btn-outline-warning"><i class="bi bi-pen"></i> Edit</a>
-                                                        @endcan
+                                                        @endif
                                                     </div>
                                                 </td>
                                             </tr>
@@ -155,22 +163,34 @@
     <script>
         function getSections(obj) {
             var class_id = obj.options[obj.selectedIndex].value;
+            var sectionSelect = document.getElementById('section-select');
+            var selectedSectionId = sectionSelect.dataset.currentSectionId || '';
 
             var url = "{{route('get.sections.courses.by.classId')}}?class_id=" + class_id
 
             fetch(url)
                 .then((resp) => resp.json())
                 .then(function (data) {
-                    var sectionSelect = document.getElementById('section-select');
                     sectionSelect.options.length = 0;
                     data.sections.unshift({ 'id': 0, 'section_name': 'Please select a section' })
                     data.sections.forEach(function (section, key) {
-                        sectionSelect[key] = new Option(section.section_name, section.id);
+                        var option = new Option(section.section_name, section.id);
+                        if (String(section.id) === String(selectedSectionId)) {
+                            option.selected = true;
+                        }
+                        sectionSelect[key] = option;
                     });
                 })
                 .catch(function (error) {
                     console.log(error);
                 });
         }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var classSelect = document.getElementById('class-select');
+            if (classSelect && classSelect.value) {
+                getSections(classSelect);
+            }
+        });
     </script>
 @endsection

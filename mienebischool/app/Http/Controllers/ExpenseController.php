@@ -13,30 +13,8 @@ class ExpenseController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-
-        // middleware for general access to this controller
-        $this->middleware(function ($request, $next) {
-            $user = Auth::user();
-            if (
-                $user->hasAnyRole(['Accountant', 'Admin', 'Staff']) ||
-                in_array($user->role, ['accountant', 'admin', 'staff'])
-            ) {
-                return $next($request);
-            }
-            abort(403, 'Unauthorized access to Expenses module.');
-        });
-
-        // Restrict Admin/Accountant only methods
-        $this->middleware(function ($request, $next) {
-            $user = Auth::user();
-            if (
-                $user->hasAnyRole(['Accountant', 'Admin']) ||
-                in_array($user->role, ['accountant', 'admin'])
-            ) {
-                return $next($request);
-            }
-            abort(403, 'Unauthorized action.');
-        })->only(['index', 'updateStatus', 'correct']);
+        $this->middleware('can:create expenses')->only(['store', 'myExpenses']);
+        $this->middleware('can:manage expenses')->only(['index', 'updateStatus', 'correct']);
     }
 
     public function index()

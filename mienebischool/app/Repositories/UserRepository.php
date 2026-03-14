@@ -232,6 +232,15 @@ class UserRepository implements UserInterface
         }
     }
 
+    public function findStudentByEmail($email)
+    {
+        try {
+            return User::with('parent_info', 'academic_info')->where('email', $email)->first();
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to get Student by Email. ' . $e->getMessage());
+        }
+    }
+
     public function findTeacher($id)
     {
         try {
@@ -258,15 +267,6 @@ class UserRepository implements UserInterface
             ]);
         } catch (\Exception $e) {
             throw new \Exception('Failed to change password. ' . $e->getMessage());
-        }
-    }
-
-    public function getAllStudentsByCourse($session_id, $class_id, $section_id, $course_id)
-    {
-        try {
-            return $this->promotionRepository->getAllByCourse($session_id, $class_id, $section_id, $course_id);
-        } catch (\Exception $e) {
-            throw new \Exception('Failed to get students by course. ' . $e->getMessage());
         }
     }
 }

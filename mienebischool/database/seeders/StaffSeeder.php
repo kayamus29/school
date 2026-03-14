@@ -17,7 +17,7 @@ class StaffSeeder extends Seeder
         \App\Models\SiteSetting::updateOrCreate(
             ['id' => 1],
             [
-                'school_name' => 'Unified Transform Academy',
+                'school_name' => 'Auracle Technologies',
                 'office_lat' => 6.5244,
                 'office_long' => 3.3792,
                 'geo_range' => 500,

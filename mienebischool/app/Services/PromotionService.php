@@ -34,6 +34,7 @@ class PromotionService
         ];
 
         if ($courseGroups->isEmpty()) {
+            $performance['incomplete'] = true;
             return $performance;
         }
 
@@ -80,8 +81,8 @@ class PromotionService
     {
         if (empty($performance['courses'])) {
             return [
-                'status' => 'retained',
-                'violations' => ['No courses found for student']
+                'status' => 'probation',
+                'violations' => ['Setup incomplete: no final marks found for this student. Manual review required.']
             ];
         }
 

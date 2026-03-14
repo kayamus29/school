@@ -51,12 +51,13 @@
                         type: "POST",
                         success: function (data) {
                             displayMessage("Event created.");
+                            var createdEvent = data.event || data;
 
                             calendar.fullCalendar('renderEvent', {
-                                id: data.id,
-                                title: event_name,
-                                start: event_start,
-                                end: event_end
+                                id: createdEvent.id,
+                                title: createdEvent.title || event_name,
+                                start: createdEvent.start || event_start,
+                                end: createdEvent.end || event_end
                             }, true);
                             calendar.fullCalendar('unselect');
                         }
@@ -82,22 +83,77 @@
                     }
                 });
             },
+            eventDrop: function (event) {
+                var event_start = $.fullCalendar.formatDate(event.start, "Y-MM-DD");
+                var event_end = event.end ? $.fullCalendar.formatDate(event.end, "Y-MM-DD") : event_start;
+
+                $.ajax({
+                    url: SITEURL + '/calendar-crud-ajax',
+                    data: {
+                        title: event.title,
+                        start: event_start,
+                        end: event_end,
+                        id: event.id,
+                        type: 'edit'
+                    },
+                    type: "POST",
+                    success: function () {
+                        displayMessage("Event updated");
+                    }
+                });
+            },
             eventClick: function (event) {
                 if({{$selectable}}){
-                    var eventDelete = confirm("Are you sure to delete?");
-                    if (eventDelete) {
+                    var action = prompt("Type 'edit' to rename this event, or 'delete' to remove it.", "edit");
+                    if (!action) {
+                        return;
+                    }
+
+                    action = action.toLowerCase().trim();
+
+                    if (action === 'edit') {
+                        var eventTitle = prompt("Update event name:", event.title);
+                        if (!eventTitle) {
+                            return;
+                        }
+
+                        var event_start = $.fullCalendar.formatDate(event.start, "Y-MM-DD");
+                        var event_end = event.end ? $.fullCalendar.formatDate(event.end, "Y-MM-DD") : event_start;
                         $.ajax({
-                            type: "POST",
                             url: SITEURL + '/calendar-crud-ajax',
                             data: {
+                                title: eventTitle,
+                                start: event_start,
+                                end: event_end,
                                 id: event.id,
-                                type: 'delete'
+                                type: 'edit'
                             },
+                            type: "POST",
                             success: function (response) {
-                                calendar.fullCalendar('removeEvents', event.id);
-                                displayMessage("Event removed");
+                                event.title = eventTitle;
+                                calendar.fullCalendar('updateEvent', event);
+                                displayMessage("Event updated");
                             }
                         });
+                        return;
+                    }
+
+                    if (action === 'delete') {
+                        var eventDelete = confirm("Are you sure to delete?");
+                        if (eventDelete) {
+                            $.ajax({
+                                type: "POST",
+                                url: SITEURL + '/calendar-crud-ajax',
+                                data: {
+                                    id: event.id,
+                                    type: 'delete'
+                                },
+                                success: function () {
+                                    calendar.fullCalendar('removeEvents', event.id);
+                                    displayMessage("Event removed");
+                                }
+                            });
+                        }
                     }
                 }
             }

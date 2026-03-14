@@ -16,6 +16,10 @@ class AssignedTeacher extends Model
 {
     use HasFactory, LogsActivity;
 
+    public const ROLE_SUBJECT_TEACHER = 'subject_teacher';
+    public const ROLE_SECTION_TEACHER = 'section_teacher';
+    public const ROLE_CLASS_SUPERVISOR = 'class_supervisor';
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -34,8 +38,11 @@ class AssignedTeacher extends Model
         'class_id',
         'section_id',
         'course_id',
+        'assignment_role',
         'session_id',
     ];
+
+    protected $appends = ['effective_assignment_role'];
 
     /**
      * Get the teacher.
@@ -67,5 +74,51 @@ class AssignedTeacher extends Model
     public function course()
     {
         return $this->belongsTo(Course::class, 'course_id');
+    }
+
+    public function getEffectiveAssignmentRoleAttribute(): string
+    {
+        if ($this->assignment_role) {
+            return $this->assignment_role;
+        }
+
+        return $this->course_id
+            ? self::ROLE_SUBJECT_TEACHER
+            : self::ROLE_SECTION_TEACHER;
+    }
+
+    public function scopeSectionTeachers($query)
+    {
+        return $query->whereNull('course_id')
+            ->where(function ($inner) {
+                $inner->whereNull('assignment_role')
+                    ->orWhere('assignment_role', self::ROLE_SECTION_TEACHER);
+            });
+    }
+
+    public function scopeSectionLeadership($query)
+    {
+        return $query->whereNull('course_id')
+            ->where(function ($inner) {
+                $inner->whereNull('assignment_role')
+                    ->orWhereIn('assignment_role', [
+                        self::ROLE_SECTION_TEACHER,
+                        self::ROLE_CLASS_SUPERVISOR,
+                    ]);
+            });
+    }
+
+    public function scopeForSectionAccess($query, ?int $sectionId)
+    {
+        return $query->where(function ($inner) use ($sectionId) {
+            if ($sectionId) {
+                $inner->where('section_id', $sectionId)
+                    ->orWhereNull('section_id');
+
+                return;
+            }
+
+            $inner->whereNull('section_id');
+        });
     }
 }

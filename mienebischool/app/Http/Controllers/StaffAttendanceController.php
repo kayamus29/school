@@ -23,8 +23,9 @@ class StaffAttendanceController extends Controller
             ->paginate(15);
 
         $settings = SiteSetting::first();
+        $attendanceReady = $this->hasValidAttendanceSettings($settings);
 
-        return view('staff.attendance.index', compact('todayAttendance', 'history', 'settings'));
+        return view('staff.attendance.index', compact('todayAttendance', 'history', 'settings', 'attendanceReady'));
     }
 
     public function checkIn(Request $request)
@@ -35,6 +36,15 @@ class StaffAttendanceController extends Controller
         ]);
 
         $settings = SiteSetting::first();
+        $settingsError = $this->getAttendanceSettingsError($settings);
+
+        if ($settingsError) {
+            return response()->json([
+                'success' => false,
+                'message' => $settingsError,
+            ], 422);
+        }
+
         $userLat = $request->lat;
         $userLong = $request->long;
 
@@ -54,7 +64,7 @@ class StaffAttendanceController extends Controller
         }
 
         $now = Carbon::now();
-        $lateThreshold = Carbon::createFromFormat('H:i:s', $settings->late_time ?? '08:00:00');
+        $lateThreshold = $this->resolveLateThreshold($settings->late_time);
         $status = $now->toTimeString() > $lateThreshold->toTimeString() ? 'late' : 'on-time';
 
         StaffAttendance::updateOrCreate(
@@ -79,6 +89,16 @@ class StaffAttendanceController extends Controller
             'lat' => 'required|numeric',
             'long' => 'required|numeric',
         ]);
+
+        $settings = SiteSetting::first();
+        $settingsError = $this->getAttendanceSettingsError($settings);
+
+        if ($settingsError) {
+            return response()->json([
+                'success' => false,
+                'message' => $settingsError,
+            ], 422);
+        }
 
         $attendance = StaffAttendance::where('user_id', Auth::id())
             ->where('date', Carbon::today())
@@ -116,5 +136,42 @@ class StaffAttendanceController extends Controller
         $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) +
             cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
         return $angle * $earthRadius;
+    }
+
+    private function resolveLateThreshold(?string $lateTime): Carbon
+    {
+        $lateTime = trim((string) $lateTime);
+
+        if ($lateTime === '') {
+            return Carbon::createFromTimeString('08:00:00');
+        }
+
+        if (preg_match('/^\d{2}:\d{2}$/', $lateTime)) {
+            $lateTime .= ':00';
+        }
+
+        return Carbon::createFromTimeString($lateTime);
+    }
+
+    private function hasValidAttendanceSettings(?SiteSetting $settings): bool
+    {
+        return $this->getAttendanceSettingsError($settings) === null;
+    }
+
+    private function getAttendanceSettingsError(?SiteSetting $settings): ?string
+    {
+        if (!$settings) {
+            return 'Attendance settings are missing. Ask admin to configure office location first.';
+        }
+
+        if ($settings->office_lat === null || $settings->office_long === null) {
+            return 'Office latitude and longitude must be configured before staff can check in.';
+        }
+
+        if (!$settings->geo_range || (int) $settings->geo_range < 1) {
+            return 'Geofencing radius must be configured before staff can check in.';
+        }
+
+        return null;
     }
 }

@@ -42,9 +42,9 @@
                                     @foreach ($previousSessionSections as $previousSessionSection)
                                     <tr>
                                         <td>{{$previousSessionSection->section->section_name}}</td>
-                                        <td>{{($currentSessionSectionsCounts > 0)?'Promoted': 'Not Promoted'}}</td>
+                                        <td>{{ !empty($sectionPromotionStatus[$previousSessionSection->section_id]) ? 'Promoted' : 'Not Promoted' }}</td>
                                         <td>
-                                            @if ($currentSessionSectionsCounts > 0)
+                                            @if (!empty($sectionPromotionStatus[$previousSessionSection->section_id]))
                                                 No action needed
                                             @else
                                                 <div class="btn-group" role="group">
@@ -65,4 +65,3 @@
     </div>
 </div>
 @endsection
-

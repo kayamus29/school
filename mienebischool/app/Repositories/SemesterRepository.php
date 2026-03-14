@@ -9,7 +9,7 @@ use App\Models\SchoolSession;
 class SemesterRepository implements SemesterInterface {
     public function create($request) {
         try {
-            Semester::create($request);
+            return Semester::create($request);
         } catch (\Exception $e) {
             throw new \Exception('Failed to create School Semester. '.$e->getMessage());
         }

@@ -5,9 +5,16 @@ namespace App\Services;
 use App\Models\StudentFee;
 use App\Models\StudentPayment;
 use Illuminate\Support\Facades\DB;
+use App\Services\StudentLedgerSyncService;
 
 class FinancialService
 {
+    protected $studentLedgerSyncService;
+
+    public function __construct(StudentLedgerSyncService $studentLedgerSyncService)
+    {
+        $this->studentLedgerSyncService = $studentLedgerSyncService;
+    }
     /**
      * Record a payment and update the associated student fee balance.
      *
@@ -80,12 +87,15 @@ class FinancialService
 
         foreach ($unpaidFees as $fee) {
             DB::transaction(function () use ($fee, $student_id, $new_session_id, $new_semester_id) {
+                // Use a unique reference to prevent collisions and allow for updates
+                $unique_reference = "Arrears for Fee ID: {$fee->id}";
+
                 // Determine if this arrears item already exists in the target term
                 $targetTermArrears = StudentFee::where('student_id', $student_id)
                     ->where('session_id', $new_session_id)
                     ->where('semester_id', $new_semester_id)
                     ->where('fee_type', 'addon')
-                    ->where('reference', "Outstanding from {$fee->session->session_name} {$fee->semester->semester_name}")
+                    ->where('reference', $unique_reference)
                     ->first();
 
                 if (!$targetTermArrears) {
@@ -96,7 +106,7 @@ class FinancialService
                         'session_id' => $new_session_id,
                         'semester_id' => $new_semester_id,
                         'fee_type' => 'addon',
-                        'reference' => "Outstanding from {$fee->session->session_name} {$fee->semester->semester_name}",
+                        'reference' => $unique_reference,
                         'amount' => $fee->balance,
                         'amount_paid' => 0,
                         'balance' => $fee->balance,
@@ -104,9 +114,12 @@ class FinancialService
                         'description' => "Arrears carried forward from Fee ID: {$fee->id}"
                     ]);
                 } else {
-                    // Arrears already exist - skip to prevent duplicates
-                    \Log::info("Skipping duplicate arrears carry-forward for student {$student_id}, fee {$fee->id} - already exists in target session/semester");
-                    return; // Exit this transaction without creating duplicate
+                    // Arrears already exist - UPDATE it to reflect the latest balance
+                    \Log::info("Updating existing arrears for student {$student_id}, fee {$fee->id}. Old balance: {$targetTermArrears->balance}, New balance: {$fee->balance}");
+                    $targetTermArrears->update([
+                        'amount' => $fee->balance,
+                        'balance' => $fee->balance,
+                    ]);
                 }
 
                 // Link the old fee to the new one and update status to reflect it's moved
@@ -115,5 +128,7 @@ class FinancialService
                 $fee->save();
             });
         }
+
+        $this->studentLedgerSyncService->syncStudent((int) $student_id);
     }
 }

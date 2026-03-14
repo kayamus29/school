@@ -23,7 +23,7 @@ class SiteSettingController extends Controller
         $setting = SiteSetting::first();
         if (!$setting) {
             $setting = SiteSetting::create([
-                'school_name' => config('app.name', 'Unifiedtransform'),
+                'school_name' => config('app.name', 'Auracle Technologies'),
                 'primary_color' => '#3490dc',
                 'secondary_color' => '#ffffff',
             ]);
@@ -47,6 +47,16 @@ class SiteSettingController extends Controller
             'office_long' => 'nullable|numeric|between:-180,180',
             'geo_range' => 'nullable|integer|min:1',
             'late_time' => 'nullable|date_format:H:i',
+            'bulksms_base_url' => 'nullable|url|max:255',
+            'bulksms_api_token' => 'nullable|string|max:255',
+            'bulksms_sender_id' => 'nullable|string|max:20',
+            'imap_host' => 'nullable|string|max:255',
+            'imap_port' => 'nullable|integer|min:1|max:65535',
+            'imap_username' => 'nullable|string|max:255',
+            'imap_password' => 'nullable|string|max:255',
+            'imap_encryption' => 'nullable|in:ssl,tls,notls',
+            'imap_validate_cert' => 'nullable|boolean',
+            'imap_mailbox' => 'nullable|string|max:255',
         ]);
 
         $setting = SiteSetting::first();
@@ -61,15 +71,25 @@ class SiteSettingController extends Controller
         $setting->office_long = $request->office_long;
         $setting->geo_range = $request->geo_range;
         $setting->late_time = $request->late_time;
+        $setting->bulksms_base_url = $request->bulksms_base_url;
+        $setting->bulksms_api_token = $request->bulksms_api_token;
+        $setting->bulksms_sender_id = $request->bulksms_sender_id;
+        $setting->imap_host = $request->imap_host;
+        $setting->imap_port = $request->imap_port;
+        $setting->imap_username = $request->imap_username;
+        $setting->imap_password = $request->imap_password;
+        $setting->imap_encryption = $request->imap_encryption;
+        $setting->imap_validate_cert = $request->boolean('imap_validate_cert', false);
+        $setting->imap_mailbox = $request->imap_mailbox;
 
         if ($request->hasFile('school_logo')) {
             $path = $request->file('school_logo')->store('uploads/logos', 'public');
-            $setting->school_logo_path = asset('storage/' . $path);
+            $setting->school_logo_path = 'storage/' . $path;
         }
 
         if ($request->hasFile('login_background')) {
             $path = $request->file('login_background')->store('uploads/backgrounds', 'public');
-            $setting->login_background_path = asset('storage/' . $path);
+            $setting->login_background_path = 'storage/' . $path;
         }
 
         $setting->save();

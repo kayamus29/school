@@ -13,11 +13,11 @@ use Spatie\Permission\Models\Role;
 class AppInit extends Command
 {
     protected $signature = 'app:init';
-    protected $description = 'Zero-assumption canonical initialization for the Unifiedtransform platform';
+    protected $description = 'Zero-assumption canonical initialization for the Auracle Technologies platform';
 
     public function handle()
     {
-        $this->info('🚀 Starting Unifiedtransform Initialization...');
+        $this->info('🚀 Starting Auracle Technologies Initialization...');
 
         // 0. Ensure Storage Directories Exist
         $this->ensureStorageDirectories();
@@ -94,7 +94,7 @@ class AppInit extends Command
         }
 
         // Ensure Admin User exists
-        $adminEmail = env('DEFAULT_ADMIN_EMAIL', 'admin@ut.com');
+        $adminEmail = env('DEFAULT_ADMIN_EMAIL', 'admin@auracletech.com');
         $adminPassword = env('DEFAULT_ADMIN_PASSWORD', 'password');
 
         $admin = User::firstOrCreate(

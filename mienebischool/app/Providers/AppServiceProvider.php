@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\StudentFee;
+use App\Models\StudentPayment;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,6 +33,11 @@ class AppServiceProvider extends ServiceProvider
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
 
+        Relation::morphMap([
+            'student_fee' => StudentFee::class,
+            'student_payment' => StudentPayment::class,
+        ]);
+
         // Share site settings globally with all views
         view()->composer('*', function ($view) {
             $site_setting = null;
@@ -44,7 +52,7 @@ class AppServiceProvider extends ServiceProvider
             if (!$site_setting) {
                 // Fallback to default object if DB record is missing
                 $site_setting = (object) [
-                    'school_name' => config('app.name', 'Unifiedtransform'),
+                    'school_name' => config('app.name', 'Auracle Technologies'),
                     'primary_color' => '#3490dc',
                     'secondary_color' => '#ffffff',
                     'school_logo_path' => null,
@@ -53,6 +61,16 @@ class AppServiceProvider extends ServiceProvider
                     'office_long' => 3.3792,
                     'geo_range' => 500,
                     'late_time' => '08:00',
+                    'bulksms_base_url' => config('services.bulksms.base_url', 'https://www.bulksmsnigeria.com/api'),
+                    'bulksms_api_token' => null,
+                    'bulksms_sender_id' => null,
+                    'imap_host' => null,
+                    'imap_port' => 993,
+                    'imap_username' => null,
+                    'imap_password' => null,
+                    'imap_encryption' => 'ssl',
+                    'imap_validate_cert' => true,
+                    'imap_mailbox' => 'INBOX',
                 ];
             }
 

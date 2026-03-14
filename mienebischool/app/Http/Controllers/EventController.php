@@ -50,7 +50,10 @@ class EventController extends Controller
                 break;
   
             case 'edit':
-                $event = Event::find($request->id)->update([
+                $event = Event::where('id', $request->id)
+                    ->where('session_id', $current_school_session_id)
+                    ->firstOrFail();
+                $event->update([
                     'title' => $request->title,
                     'start' => $request->start,
                     'end' => $request->end,
@@ -58,13 +61,19 @@ class EventController extends Controller
                 break;
   
             case 'delete':
-                $event = Event::find($request->id)->delete();
+                $event = Event::where('id', $request->id)
+                    ->where('session_id', $current_school_session_id)
+                    ->firstOrFail();
+                $event->delete();
                 break;
              
             default:
                 break;
         }
-        dd($event);
-        return response()->json($event);
+
+        return response()->json([
+            'success' => true,
+            'event' => $event,
+        ]);
     }
 }

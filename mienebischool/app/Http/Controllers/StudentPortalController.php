@@ -11,8 +11,12 @@ use App\Models\Notice;
 use App\Models\Promotion;
 use App\Models\StudentFee;
 use App\Models\StudentPayment;
+use App\Models\EndTermUpdate;
+use App\Models\SchoolSession as SchoolSessionModel;
+use App\Models\Semester;
 use App\Traits\SchoolSession;
 use App\Interfaces\SchoolSessionInterface;
+use Illuminate\Support\Facades\Schema;
 
 class StudentPortalController extends Controller
 {
@@ -41,23 +45,28 @@ class StudentPortalController extends Controller
             ->with(['schoolClass', 'section'])
             ->first();
 
-        // Recent attendance
-        $recentAttendance = Attendance::where('student_id', $student->id)
+        $dailyAttendance = Attendance::where('student_id', $student->id)
             ->where('session_id', $current_session_id)
-            ->latest()
-            ->take(5)
+            ->with('schoolClass')
+            ->orderByDesc('created_at')
             ->get();
 
-        // Attendance summary
-        $totalPresent = Attendance::where('student_id', $student->id)
-            ->where('session_id', $current_session_id)
-            ->where('status', 'Present')
-            ->count();
+        $dailyAttendance = $dailyAttendance
+            ->groupBy(fn ($attendance) => optional($attendance->created_at)->toDateString())
+            ->map(function ($records) {
+                $record = $records->sortByDesc('created_at')->first();
+                $record->display_status = $records->contains(fn ($attendance) => $this->isPresentAttendanceStatus($attendance->status))
+                    ? 'Present'
+                    : 'Absent';
+                $record->attendance_date = optional($record->created_at);
 
-        $totalAbsent = Attendance::where('student_id', $student->id)
-            ->where('session_id', $current_session_id)
-            ->where('status', 'Absent')
-            ->count();
+                return $record;
+            })
+            ->values();
+
+        $recentAttendance = $dailyAttendance->take(5);
+        $totalPresent = $dailyAttendance->where('display_status', 'Present')->count();
+        $totalAbsent = $dailyAttendance->where('display_status', 'Absent')->count();
 
         // Recent notices
         $notices = Notice::where('session_id', $current_session_id)
@@ -85,6 +94,11 @@ class StudentPortalController extends Controller
             'walletBalance',
             'totalSchoolDays'
         ));
+    }
+
+    private function isPresentAttendanceStatus(?string $status): bool
+    {
+        return in_array(strtolower((string) $status), ['on', 'present'], true);
     }
 
     /**
@@ -181,5 +195,45 @@ class StudentPortalController extends Controller
         $walletBalance = $this->walletService->getBalance($student->id);
 
         return view('student.fees', compact('student', 'fees', 'payments', 'walletBalance'));
+    }
+
+    /**
+     * View end-of-term news for a selected session/term
+     */
+    public function endTermNews(Request $request)
+    {
+        $student = Auth::user();
+        $currentSessionId = $this->getSchoolCurrentSession();
+        $sessionId = (int) $request->query('session_id', $currentSessionId);
+        $semesterId = (int) $request->query('semester_id', 0);
+
+        if (!\App\Classes\AcademicGate::canViewResults($student)) {
+            abort(403, 'Please settle the outstanding financial balance to view this page.');
+        }
+
+        $allowedSessionIds = Promotion::where('student_id', $student->id)->pluck('session_id')
+            ->merge(\App\Models\FinalMark::where('student_id', $student->id)->pluck('session_id'))
+            ->merge(Mark::where('student_id', $student->id)->pluck('session_id'))
+            ->unique()
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if (!in_array($sessionId, $allowedSessionIds, true) && $sessionId !== $currentSessionId) {
+            abort(403);
+        }
+
+        $session = SchoolSessionModel::findOrFail($sessionId);
+        $semester = Semester::where('session_id', $sessionId)
+            ->where('id', $semesterId)
+            ->firstOrFail();
+
+        $endTermUpdate = Schema::hasTable('end_term_updates')
+            ? EndTermUpdate::where('session_id', $sessionId)
+                ->where('semester_id', $semesterId)
+                ->first()
+            : null;
+
+        return view('student.end-term-news', compact('student', 'session', 'semester', 'endTermUpdate'));
     }
 }

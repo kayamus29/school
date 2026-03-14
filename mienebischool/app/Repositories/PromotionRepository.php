@@ -32,9 +32,21 @@ class PromotionRepository
     public function update($request, $student_id)
     {
         try {
-            Promotion::where('student_id', $student_id)->update([
+            $query = Promotion::where('student_id', $student_id);
+
+            if (!empty($request['session_id'])) {
+                $query->where('session_id', $request['session_id']);
+            }
+
+            $payload = [
                 'id_card_number' => $request['id_card_number'],
-            ]);
+            ];
+
+            if (array_key_exists('section_id', $request) && !empty($request['section_id'])) {
+                $payload['section_id'] = $request['section_id'];
+            }
+
+            $query->update($payload);
         } catch (\Exception $e) {
             throw new \Exception('Failed to update Student. ' . $e->getMessage());
         }
@@ -54,9 +66,9 @@ class PromotionRepository
                 Promotion::updateOrCreate([
                     'student_id' => $row['student_id'],
                     'session_id' => $row['session_id'],
+                ], [
                     'class_id' => $row['class_id'],
                     'section_id' => $row['section_id'],
-                ], [
                     'id_card_number' => $row['id_card_number'],
                 ]);
 
@@ -106,18 +118,6 @@ class PromotionRepository
             ->get();
     }
 
-    public function getAllByCourse($session_id, $class_id, $section_id, $course_id)
-    {
-        return Promotion::with(['student.parent_info', 'section', 'student.academic_info'])
-            ->where('session_id', $session_id)
-            ->where('class_id', $class_id)
-            ->where('section_id', $section_id)
-            ->whereHas('student.academic_info', function ($query) use ($course_id) {
-                $query->where('course_id', $course_id);
-            })
-            ->get();
-    }
-
     public function getPromotionInfoById($session_id, $student_id)
     {
         return Promotion::with(['student.parent_info', 'section'])
@@ -150,5 +150,24 @@ class PromotionRepository
             ->where('session_id', $session_id)
             ->distinct('section_id')
             ->get();
+    }
+
+    public function isSectionPromotedToSession($sourceSessionId, $targetSessionId, $classId, $sectionId)
+    {
+        $studentIds = Promotion::where('session_id', $sourceSessionId)
+            ->where('class_id', $classId)
+            ->where('section_id', $sectionId)
+            ->pluck('student_id');
+
+        if ($studentIds->isEmpty()) {
+            return false;
+        }
+
+        $promotedCount = Promotion::where('session_id', $targetSessionId)
+            ->whereIn('student_id', $studentIds)
+            ->distinct('student_id')
+            ->count('student_id');
+
+        return $promotedCount === $studentIds->count();
     }
 }

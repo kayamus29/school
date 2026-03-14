@@ -63,7 +63,7 @@
                             <div class="col-md-3">
                                 <div class="card rounded-pill border-secondary shadow-sm">
                                     <div class="card-body">
-                                        <div class="d-flex justify_content-between align-items-center text-secondary">
+                                        <div class="d-flex justify-content-between align-items-center text-secondary">
                                             <div class="ms-2 me-auto">
                                                 <div class="fw-bold"><i class="bi bi-calendar-range-fill me-2"></i> Total Attendance Days</div>
                                             </div>
@@ -94,10 +94,10 @@
                                                 <tbody>
                                                     @forelse($recentAttendance as $record)
                                                         <tr>
-                                                            <td class="ps-4">{{ $record->created_at->format('d M, Y') }}</td>
+                                                            <td class="ps-4">{{ optional($record->attendance_date ?? $record->created_at)->format('d M, Y') }}</td>
                                                             <td>
-                                                                <span class="badge rounded-pill {{ $record->status == 'Present' ? 'bg-success' : 'bg-danger' }}">
-                                                                    {{ $record->status }}
+                                                                <span class="badge rounded-pill {{ ($record->display_status ?? $record->status) == 'Present' ? 'bg-success' : 'bg-danger' }}">
+                                                                    {{ $record->display_status ?? $record->status }}
                                                                 </span>
                                                             </td>
                                                             <td>{{ $record->schoolClass->class_name ?? 'N/A' }}</td>

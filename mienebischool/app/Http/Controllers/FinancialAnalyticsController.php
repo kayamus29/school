@@ -23,8 +23,12 @@ class FinancialAnalyticsController extends Controller
 
         // 1. Revenue Summaries
         $totalRevenue = StudentPayment::where('school_session_id', $session_id)->sum('amount_paid');
-        $totalOutstanding = StudentFee::where('session_id', $session_id)->sum('balance');
-        $totalExpected = StudentFee::where('session_id', $session_id)->sum('amount');
+        $totalOutstanding = StudentFee::where('session_id', $session_id)
+            ->whereNull('transferred_to_id')
+            ->sum('balance');
+        $totalExpected = StudentFee::where('session_id', $session_id)
+            ->whereNull('transferred_to_id')
+            ->sum('amount');
 
         // 2. Growth Analytics (Month-on-Month for the current year)
         $currentYear = date('Y');
@@ -32,6 +36,7 @@ class FinancialAnalyticsController extends Controller
             DB::raw('MONTH(transaction_date) as month'),
             DB::raw('SUM(amount_paid) as total')
         )
+            ->where('school_session_id', $session_id)
             ->whereYear('transaction_date', $currentYear)
             ->groupBy('month')
             ->orderBy('month')
@@ -48,6 +53,7 @@ class FinancialAnalyticsController extends Controller
         // 3. Fee Type Breakdown (Tuition vs Addons)
         $feeTypes = StudentFee::select('fee_type', DB::raw('SUM(amount_paid) as revenue'))
             ->where('session_id', $session_id)
+            ->whereNull('transferred_to_id')
             ->groupBy('fee_type')
             ->get();
 
