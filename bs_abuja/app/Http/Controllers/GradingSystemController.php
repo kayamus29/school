@@ -77,8 +77,28 @@ class GradingSystemController extends Controller
     public function store(GradingSystemStoreRequest $request)
     {
         try {
+            $validated = $request->validated();
+
+            if (count($validated['names']) !== count($validated['weights'])) {
+                return back()->withInput()->withError('Each assessment component must have a matching weight.');
+            }
+
+            if (array_sum($validated['weights']) != 100) {
+                return back()->withInput()->withError('The sum of weights must be exactly 100%.');
+            }
+
+            $validated['marks_breakdown'] = [];
+            foreach ($validated['names'] as $index => $name) {
+                $validated['marks_breakdown'][] = [
+                    'name' => $name,
+                    'weight' => (float) $validated['weights'][$index],
+                ];
+            }
+
+            unset($validated['names'], $validated['weights']);
+
             $gradingSystemRepository = new GradingSystemRepository();
-            $gradingSystemRepository->store($request->validated());
+            $gradingSystemRepository->store($validated);
 
             return back()->with('status', 'Creating grading system was successful!');
         } catch (\Exception $e) {

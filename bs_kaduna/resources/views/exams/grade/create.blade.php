@@ -45,7 +45,54 @@
                                         <div class="mt-2">
                                             <p>Grading System name<sup><i class="bi bi-asterisk text-primary"></i></sup></p>
                                             <input type="text" class="form-control" placeholder="Grading System 1"
-                                                aria-label="Grading System 1" name="system_name" required>
+                                                aria-label="Grading System 1" name="system_name" required
+                                                value="{{ old('system_name') }}">
+                                        </div>
+                                        <div id="weights-container" class="mt-3">
+                                            <p class="mb-2">Marks breakdown<sup><i class="bi bi-asterisk text-primary"></i></sup></p>
+                                            <div class="weight-row mb-2 border p-2 bg-white rounded shadow-sm">
+                                                <div class="row g-2 align-items-end">
+                                                    <div class="col-6">
+                                                        <label class="form-label small mb-1">Label</label>
+                                                        <input type="text" name="names[]" class="form-control form-control-sm"
+                                                            value="{{ old('names.0', 'Final Exam') }}" required>
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <label class="form-label small mb-1">Weight (%)</label>
+                                                        <input type="number" name="weights[]" class="form-control form-control-sm"
+                                                            value="{{ old('weights.0', 70) }}" required min="0" max="100" step="0.01">
+                                                    </div>
+                                                    <div class="col-2 text-end">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger border-0 remove-weight-row">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="weight-row mb-2 border p-2 bg-white rounded shadow-sm">
+                                                <div class="row g-2 align-items-end">
+                                                    <div class="col-6">
+                                                        <label class="form-label small mb-1">Label</label>
+                                                        <input type="text" name="names[]" class="form-control form-control-sm"
+                                                            value="{{ old('names.1', 'CA') }}" required>
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <label class="form-label small mb-1">Weight (%)</label>
+                                                        <input type="number" name="weights[]" class="form-control form-control-sm"
+                                                            value="{{ old('weights.1', 30) }}" required min="0" max="100" step="0.01">
+                                                    </div>
+                                                    <div class="col-2 text-end">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger border-0 remove-weight-row">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="d-grid gap-2 mt-2">
+                                            <button type="button" id="add-weight-row" class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-plus-lg"></i> Add Component
+                                            </button>
                                         </div>
                                         <button type="submit" class="mt-3 btn btn-sm btn-outline-primary"><i
                                                 class="bi bi-check2"></i> Create</button>
@@ -59,4 +106,42 @@
             </div>
         </div>
     </div>
+    <script>
+        document.getElementById('add-weight-row').addEventListener('click', function () {
+            const container = document.getElementById('weights-container');
+            const newRow = document.createElement('div');
+            newRow.className = 'weight-row mb-2 border p-2 bg-white rounded shadow-sm';
+            newRow.innerHTML = `
+                <div class="row g-2 align-items-end">
+                    <div class="col-6">
+                        <label class="form-label small mb-1">Label</label>
+                        <input type="text" name="names[]" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label small mb-1">Weight (%)</label>
+                        <input type="number" name="weights[]" class="form-control form-control-sm" required min="0" max="100" step="0.01">
+                    </div>
+                    <div class="col-2 text-end">
+                        <button type="button" class="btn btn-sm btn-outline-danger border-0 remove-weight-row">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(newRow);
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.remove-weight-row')) {
+                return;
+            }
+
+            const rows = document.querySelectorAll('.weight-row');
+            if (rows.length > 1) {
+                e.target.closest('.weight-row').remove();
+            } else {
+                alert('At least one component is required.');
+            }
+        });
+    </script>
 @endsection

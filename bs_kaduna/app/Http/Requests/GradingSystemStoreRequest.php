@@ -27,6 +27,10 @@ class GradingSystemStoreRequest extends FormRequest
             'system_name' => 'required|string',
             'class_ids' => 'required|array',
             'class_ids.*' => 'integer',
+            'names' => 'required|array|min:1',
+            'names.*' => 'required|string',
+            'weights' => 'required|array|min:1',
+            'weights.*' => 'required|numeric|min:0|max:100',
             'semester_id' => 'required|integer',
             'session_id' => 'required|integer'
         ];

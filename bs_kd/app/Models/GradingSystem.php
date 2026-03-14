@@ -14,8 +14,13 @@ class GradingSystem extends Model
     protected $fillable = [
         'system_name',
         'class_id',
+        'marks_breakdown',
         'semester_id',
         'session_id'
+    ];
+
+    protected $casts = [
+        'marks_breakdown' => 'array',
     ];
 
     public function semester()

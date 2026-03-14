@@ -62,6 +62,11 @@ class ExamRepository implements ExamInterface
         $courses = $courseRepository->getByClassId($class_id);
 
         $academicSetting = \App\Models\AcademicSetting::find(1);
+        $marksBreakdown = $gradingSystem->marks_breakdown ?: ($academicSetting->marks_breakdown ?? [
+            ['name' => 'Final Exam', 'weight' => 70],
+            ['name' => 'CA 1', 'weight' => 15],
+            ['name' => 'CA 2', 'weight' => 15]
+        ]);
 
         foreach ($courses as $course) {
             // Fix: Use firstOrCreate to prevent duplicates causing "Ghost Exams" (e.g. 200 marks issue)
@@ -91,11 +96,7 @@ class ExamRepository implements ExamInterface
             );
 
             // Always update marks_breakdown to reflect current academic settings
-            $examRule->marks_breakdown = $academicSetting->marks_breakdown ?? [
-                ['name' => 'Final Exam', 'weight' => 70],
-                ['name' => 'CA 1', 'weight' => 15],
-                ['name' => 'CA 2', 'weight' => 15]
-            ];
+            $examRule->marks_breakdown = $marksBreakdown;
 
             $examRule->save();
         }
