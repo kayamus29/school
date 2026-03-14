@@ -1,0 +1,29 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Handle Static Assets First
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Route Internal Systems to Laravel Front Controller
+    # Paths include login, portal, api, administrative modules, and storage
+    RewriteCond %{REQUEST_URI} ^/(login|register|logout|home|portal|api|school|attendances|classes|sections|teachers|students|marks|results|exams|promotions|accounting|ajax|staff|audit|academics|settings|calendar-|routine|syllabus|notice|courses|password|storage) [NC]
+    RewriteRule ^ index.php [L]
+
+    # Fallback to React SPA (index.html) for all other non-file/non-folder requests
+    RewriteRule ^ index.html [L]
+</IfModule>

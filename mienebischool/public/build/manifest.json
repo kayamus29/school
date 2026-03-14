@@ -1,0 +1,33 @@
+{
+  "resources/js/Pages/Results/StudentDashboard.tsx": {
+    "file": "assets/StudentDashboard-BS2Yhdie.js",
+    "name": "StudentDashboard",
+    "src": "resources/js/Pages/Results/StudentDashboard.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.tsx"
+    ]
+  },
+  "resources/js/Pages/Welcome.tsx": {
+    "file": "assets/Welcome-0pRbw30d.js",
+    "name": "Welcome",
+    "src": "resources/js/Pages/Welcome.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.tsx"
+    ]
+  },
+  "resources/js/app.tsx": {
+    "file": "assets/app-BS2QDSuP.js",
+    "name": "app",
+    "src": "resources/js/app.tsx",
+    "isEntry": true,
+    "dynamicImports": [
+      "resources/js/Pages/Results/StudentDashboard.tsx",
+      "resources/js/Pages/Welcome.tsx"
+    ],
+    "css": [
+      "assets/app-kICZaPo2.css"
+    ]
+  }
+}

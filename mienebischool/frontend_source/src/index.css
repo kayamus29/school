@@ -1,0 +1,283 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Primary - Brand Navy (#12086F) */
+    --primary: 246 87% 23%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary - Brand Cyan (#4CC9F0) */
+    --secondary: 194 85% 62%;
+    --secondary-foreground: 0 0% 100%;
+    
+    /* Background & Foreground */
+    --background: 210 20% 98%;
+    --foreground: 220 40% 15%;
+    
+    /* Card */
+    --card: 0 0% 100%;
+    --card-foreground: 220 40% 15%;
+    
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 40% 15%;
+    
+    /* Muted */
+    --muted: 210 20% 94%;
+    --muted-foreground: 220 15% 45%;
+    
+    /* Accent */
+    --accent: 194 85% 95%;
+    --accent-foreground: 246 87% 23%;
+    
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Border & Input */
+    --border: 220 20% 88%;
+    --input: 220 20% 88%;
+    --ring: 246 87% 23%;
+    
+    /* Custom Colors */
+    --gold: 45 90% 55%;
+    --gold-light: 45 85% 70%;
+    --gold-dark: 45 80% 40%;
+    --navy: 246 87% 23%;
+    --navy-light: 246 60% 30%;
+    --navy-dark: 246 85% 18%;
+    --cream: 45 40% 96%;
+    --success: 160 60% 45%;
+    
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(246 87% 23%) 0%, hsl(246 60% 30%) 50%, hsl(194 85% 62%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(195 85% 60%) 0%, hsl(195 85% 52%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 20% 98%) 100%);
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(246 87% 23% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(246 87% 23% / 0.1), 0 2px 4px -2px hsl(246 87% 23% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(246 87% 23% / 0.1), 0 4px 6px -4px hsl(246 87% 23% / 0.1);
+    --shadow-gold: 0 4px 14px 0 hsl(195 85% 60% / 0.35);
+    
+    --radius: 0.75rem;
+    
+    /* Sidebar */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 246 87% 23%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 194 85% 95%;
+    --sidebar-accent-foreground: 246 87% 23%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 194 85% 62%;
+  }
+
+  .dark {
+    --background: 220 60% 8%;
+    --foreground: 210 20% 98%;
+    --card: 220 50% 12%;
+    --card-foreground: 210 20% 98%;
+    --popover: 220 50% 12%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 45 90% 55%;
+    --primary-foreground: 220 60% 15%;
+    --secondary: 220 40% 25%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 220 40% 18%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 220 40% 20%;
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 220 40% 20%;
+    --input: 220 40% 20%;
+    --ring: 45 90% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+  
+  .gradient-gold {
+    background: var(--gradient-gold);
+  }
+  
+  .text-gradient {
+    @apply text-secondary;
+  }
+  
+  .shadow-elegant {
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .shadow-gold {
+    box-shadow: var(--shadow-gold);
+  }
+  
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-md;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+  
+  .link-underline {
+    @apply relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-secondary after:transition-all after:duration-300 hover:after:w-full;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+  
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+  
+  .animate-fade-in-down {
+    animation: fadeInDown 0.6s ease-out forwards;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.5s ease-out forwards;
+  }
+  
+  .animate-slide-in-left {
+    animation: slideInLeft 0.6s ease-out forwards;
+  }
+  
+  .animate-slide-in-right {
+    animation: slideInRight 0.6s ease-out forwards;
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-pulse-slow {
+    animation: pulse 3s ease-in-out infinite;
+  }
+  
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-5 { animation-delay: 0.5s; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(30px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes fadeInDown {
+  from { 
+    opacity: 0; 
+    transform: translateY(-30px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes scaleIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.9); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+}
+
+@keyframes slideInLeft {
+  from { 
+    opacity: 0; 
+    transform: translateX(-50px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+}
+
+@keyframes slideInRight {
+  from { 
+    opacity: 0; 
+    transform: translateX(50px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary));
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--navy-light));
+}

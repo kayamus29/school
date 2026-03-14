@@ -1,0 +1,402 @@
+Starting Validation Simulation...
+Mismatch for Student ID 2 (Justus):
+  - Calculated Wallet: 19869
+  - Legacy Outstanding (Active Debt): 4451.00 -> Expected Wallet: -4451
+  - Diff: 24320
+  Details:
+  - Payments: 28704
+  - Fees Total: 8835
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 19869
+------------------------------------------------
+Mismatch for Student ID 5 (Dena):
+  - Calculated Wallet: 54583
+  - Legacy Outstanding (Active Debt): 2248.00 -> Expected Wallet: -2248
+  - Diff: 56831
+  Details:
+  - Payments: 60000
+  - Fees Total: 5417
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 54583
+------------------------------------------------
+Mismatch for Student ID 6 (Maurine):
+  - Calculated Wallet: 45218
+  - Legacy Outstanding (Active Debt): 4813.00 -> Expected Wallet: -4813
+  - Diff: 50031
+  Details:
+  - Payments: 53472
+  - Fees Total: 8254
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 45218
+------------------------------------------------
+Mismatch for Student ID 8 (Bridget):
+  - Calculated Wallet: 21186
+  - Legacy Outstanding (Active Debt): 4451.00 -> Expected Wallet: -4451
+  - Diff: 25637
+  Details:
+  - Payments: 30021
+  - Fees Total: 8835
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 21186
+------------------------------------------------
+Mismatch for Student ID 9 (Luis):
+  - Calculated Wallet: 53426
+  - Legacy Outstanding (Active Debt): 4274.00 -> Expected Wallet: -4274
+  - Diff: 57700
+  Details:
+  - Payments: 60000
+  - Fees Total: 6574
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 53426
+------------------------------------------------
+Mismatch for Student ID 10 (Sydney):
+  - Calculated Wallet: 52787
+  - Legacy Outstanding (Active Debt): 4232.00 -> Expected Wallet: -4232
+  - Diff: 57019
+  Details:
+  - Payments: 60000
+  - Fees Total: 7213
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 52787
+------------------------------------------------
+Mismatch for Student ID 13 (Teagan):
+  - Calculated Wallet: 55500
+  - Legacy Outstanding (Active Debt): 1743.00 -> Expected Wallet: -1743
+  - Diff: 57243
+  Details:
+  - Payments: 60500
+  - Fees Total: 5000
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 55500
+------------------------------------------------
+Mismatch for Student ID 14 (Meda):
+  - Calculated Wallet: 51665
+  - Legacy Outstanding (Active Debt): 4451.00 -> Expected Wallet: -4451
+  - Diff: 56116
+  Details:
+  - Payments: 60500
+  - Fees Total: 8835
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 51665
+------------------------------------------------
+Mismatch for Student ID 15 (Kaylah):
+  - Calculated Wallet: 53926
+  - Legacy Outstanding (Active Debt): 4274.00 -> Expected Wallet: -4274
+  - Diff: 58200
+  Details:
+  - Payments: 60500
+  - Fees Total: 6574
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 53926
+------------------------------------------------
+Mismatch for Student ID 16 (Nikita):
+  - Calculated Wallet: 53287
+  - Legacy Outstanding (Active Debt): 4232.00 -> Expected Wallet: -4232
+  - Diff: 57519
+  Details:
+  - Payments: 60500
+  - Fees Total: 7213
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 53287
+------------------------------------------------
+Mismatch for Student ID 18 (Devante):
+  - Calculated Wallet: 52246
+  - Legacy Outstanding (Active Debt): 4813.00 -> Expected Wallet: -4813
+  - Diff: 57059
+  Details:
+  - Payments: 60500
+  - Fees Total: 8254
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 52246
+------------------------------------------------
+Mismatch for Student ID 19 (Darrin):
+  - Calculated Wallet: 55500
+  - Legacy Outstanding (Active Debt): 1743.00 -> Expected Wallet: -1743
+  - Diff: 57243
+  Details:
+  - Payments: 60500
+  - Fees Total: 5000
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 55500
+------------------------------------------------
+Mismatch for Student ID 20 (Reyes):
+  - Calculated Wallet: 51665
+  - Legacy Outstanding (Active Debt): 4451.00 -> Expected Wallet: -4451
+  - Diff: 56116
+  Details:
+  - Payments: 60500
+  - Fees Total: 8835
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 51665
+------------------------------------------------
+Mismatch for Student ID 22 (Annabel):
+  - Calculated Wallet: 47103
+  - Legacy Outstanding (Active Debt): 4232.00 -> Expected Wallet: -4232
+  - Diff: 51335
+  Details:
+  - Payments: 54316
+  - Fees Total: 7213
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 47103
+------------------------------------------------
+Mismatch for Student ID 23 (Tyler):
+  - Calculated Wallet: 55583
+  - Legacy Outstanding (Active Debt): 2248.00 -> Expected Wallet: -2248
+  - Diff: 57831
+  Details:
+  - Payments: 61000
+  - Fees Total: 5417
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 55583
+------------------------------------------------
+Mismatch for Student ID 24 (Hertha):
+  - Calculated Wallet: 52746
+  - Legacy Outstanding (Active Debt): 4813.00 -> Expected Wallet: -4813
+  - Diff: 57559
+  Details:
+  - Payments: 61000
+  - Fees Total: 8254
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 52746
+------------------------------------------------
+Mismatch for Student ID 25 (Sherwood):
+  - Calculated Wallet: 56000
+  - Legacy Outstanding (Active Debt): 1743.00 -> Expected Wallet: -1743
+  - Diff: 57743
+  Details:
+  - Payments: 61000
+  - Fees Total: 5000
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 56000
+------------------------------------------------
+Mismatch for Student ID 26 (Yoshiko):
+  - Calculated Wallet: 7654
+  - Legacy Outstanding (Active Debt): 4451.00 -> Expected Wallet: -4451
+  - Diff: 12105
+  Details:
+  - Payments: 16489
+  - Fees Total: 8835
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 7654
+------------------------------------------------
+Mismatch for Student ID 28 (Eldred):
+  - Calculated Wallet: 1925
+  - Legacy Outstanding (Active Debt): 4232.00 -> Expected Wallet: -4232
+  - Diff: 6157
+  Details:
+  - Payments: 9138
+  - Fees Total: 7213
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 1925
+------------------------------------------------
+Mismatch for Student ID 29 (Sandra):
+  - Calculated Wallet: 20575
+  - Legacy Outstanding (Active Debt): 2248.00 -> Expected Wallet: -2248
+  - Diff: 22823
+  Details:
+  - Payments: 25992
+  - Fees Total: 5417
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 20575
+------------------------------------------------
+Mismatch for Student ID 30 (Anastasia):
+  - Calculated Wallet: 30434
+  - Legacy Outstanding (Active Debt): 4813.00 -> Expected Wallet: -4813
+  - Diff: 35247
+  Details:
+  - Payments: 38688
+  - Fees Total: 8254
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 30434
+------------------------------------------------
+Mismatch for Student ID 31 (Nicholaus):
+  - Calculated Wallet: 56000
+  - Legacy Outstanding (Active Debt): 1743.00 -> Expected Wallet: -1743
+  - Diff: 57743
+  Details:
+  - Payments: 61000
+  - Fees Total: 5000
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 56000
+------------------------------------------------
+Mismatch for Student ID 32 (Paris):
+  - Calculated Wallet: -1585
+  - Legacy Outstanding (Active Debt): 4451.00 -> Expected Wallet: -4451
+  - Diff: 2866
+  Details:
+  - Payments: 7250
+  - Fees Total: 8835
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): -1585
+------------------------------------------------
+Mismatch for Student ID 33 (Serenity):
+  - Calculated Wallet: 54926
+  - Legacy Outstanding (Active Debt): 4274.00 -> Expected Wallet: -4274
+  - Diff: 59200
+  Details:
+  - Payments: 61500
+  - Fees Total: 6574
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 54926
+------------------------------------------------
+Mismatch for Student ID 35 (Noemi):
+  - Calculated Wallet: 56083
+  - Legacy Outstanding (Active Debt): 2248.00 -> Expected Wallet: -2248
+  - Diff: 58331
+  Details:
+  - Payments: 61500
+  - Fees Total: 5417
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 56083
+------------------------------------------------
+Mismatch for Student ID 40 (Marina):
+  - Calculated Wallet: 15805
+  - Legacy Outstanding (Active Debt): 4232.00 -> Expected Wallet: -4232
+  - Diff: 20037
+  Details:
+  - Payments: 23018
+  - Fees Total: 7213
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 15805
+------------------------------------------------
+Mismatch for Student ID 41 (Kimberly):
+  - Calculated Wallet: 56083
+  - Legacy Outstanding (Active Debt): 2248.00 -> Expected Wallet: -2248
+  - Diff: 58331
+  Details:
+  - Payments: 61500
+  - Fees Total: 5417
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 56083
+------------------------------------------------
+Mismatch for Student ID 42 (Trevor):
+  - Calculated Wallet: 53746
+  - Legacy Outstanding (Active Debt): 4813.00 -> Expected Wallet: -4813
+  - Diff: 58559
+  Details:
+  - Payments: 62000
+  - Fees Total: 8254
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 53746
+------------------------------------------------
+Mismatch for Student ID 44 (Ford):
+  - Calculated Wallet: 53165
+  - Legacy Outstanding (Active Debt): 4451.00 -> Expected Wallet: -4451
+  - Diff: 57616
+  Details:
+  - Payments: 62000
+  - Fees Total: 8835
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 53165
+------------------------------------------------
+Mismatch for Student ID 45 (Archibald):
+  - Calculated Wallet: 55426
+  - Legacy Outstanding (Active Debt): 4274.00 -> Expected Wallet: -4274
+  - Diff: 59700
+  Details:
+  - Payments: 62000
+  - Fees Total: 6574
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 55426
+------------------------------------------------
+Mismatch for Student ID 47 (Al):
+  - Calculated Wallet: 56583
+  - Legacy Outstanding (Active Debt): 2248.00 -> Expected Wallet: -2248
+  - Diff: 58831
+  Details:
+  - Payments: 62000
+  - Fees Total: 5417
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 56583
+------------------------------------------------
+Mismatch for Student ID 48 (Rico):
+  - Calculated Wallet: 53746
+  - Legacy Outstanding (Active Debt): 4813.00 -> Expected Wallet: -4813
+  - Diff: 58559
+  Details:
+  - Payments: 62000
+  - Fees Total: 8254
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 53746
+------------------------------------------------
+Mismatch for Student ID 49 (Icie):
+  - Calculated Wallet: 57000
+  - Legacy Outstanding (Active Debt): 1743.00 -> Expected Wallet: -1743
+  - Diff: 58743
+  Details:
+  - Payments: 62000
+  - Fees Total: 5000
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 57000
+------------------------------------------------
+Mismatch for Student ID 50 (Reid):
+  - Calculated Wallet: 50936
+  - Legacy Outstanding (Active Debt): 4451.00 -> Expected Wallet: -4451
+  - Diff: 55387
+  Details:
+  - Payments: 59771
+  - Fees Total: 8835
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 50936
+------------------------------------------------
+Mismatch for Student ID 51 (Ines):
+  - Calculated Wallet: 55426
+  - Legacy Outstanding (Active Debt): 4274.00 -> Expected Wallet: -4274
+  - Diff: 59700
+  Details:
+  - Payments: 62000
+  - Fees Total: 6574
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 55426
+------------------------------------------------
+Mismatch for Student ID 53 (Emmy):
+  - Calculated Wallet: 57083
+  - Legacy Outstanding (Active Debt): 2248.00 -> Expected Wallet: -2248
+  - Diff: 59331
+  Details:
+  - Payments: 62500
+  - Fees Total: 5417
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 57083
+------------------------------------------------
+Mismatch for Student ID 54 (Myrtie):
+  - Calculated Wallet: 11992
+  - Legacy Outstanding (Active Debt): 4813.00 -> Expected Wallet: -4813
+  - Diff: 16805
+  Details:
+  - Payments: 20246
+  - Fees Total: 8254
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 11992
+------------------------------------------------
+Mismatch for Student ID 55 (Richard):
+  - Calculated Wallet: 57500
+  - Legacy Outstanding (Active Debt): 1743.00 -> Expected Wallet: -1743
+  - Diff: 59243
+  Details:
+  - Payments: 62500
+  - Fees Total: 5000
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 57500
+------------------------------------------------
+Mismatch for Student ID 56 (Tanner):
+  - Calculated Wallet: 53665
+  - Legacy Outstanding (Active Debt): 4451.00 -> Expected Wallet: -4451
+  - Diff: 58116
+  Details:
+  - Payments: 62500
+  - Fees Total: 8835
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 53665
+------------------------------------------------
+Mismatch for Student ID 61 (Hobart):
+  - Calculated Wallet: 33587
+  - Legacy Outstanding (Active Debt): 1743.00 -> Expected Wallet: -1743
+  - Diff: 35330
+  Details:
+  - Payments: 38587
+  - Fees Total: 5000
+  - Transferred Credit: 0
+  - Formula Check (Pay - Bill + Credit): 33587
+------------------------------------------------
+Validation Complete.
