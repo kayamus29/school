@@ -44,10 +44,20 @@ class ExamController extends Controller
 
         $school_classes = $this->schoolClassRepository->getAllBySession($current_school_session_id);
 
-        $examRepository = new ExamRepository();
-        $examRepository->ensureExamsExistForClass($current_school_session_id, $semester_id, $class_id);
+        if ((int) $semester_id === 0) {
+            $semester_id = optional($semesters->first())->id ?? 0;
+        }
 
-        $exams = $examRepository->getAll($current_school_session_id, $semester_id, $class_id);
+        if ((int) $class_id === 0) {
+            $class_id = optional($school_classes->first())->id ?? 0;
+        }
+
+        $examRepository = new ExamRepository();
+        if ($semester_id && $class_id) {
+            $examRepository->ensureExamsExistForClass($current_school_session_id, $semester_id, $class_id);
+        }
+
+        $exams = $examRepository->getAll($current_school_session_id, $semester_id, $class_id, 0);
 
         $assignedTeacherRepository = new AssignedTeacherRepository();
 
