@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SiteSetting;
 use App\Traits\SchoolSession;
+use App\Interfaces\SchoolSessionInterface;
 use App\Services\StudentIdentifierService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -13,8 +14,13 @@ class SiteSettingController extends Controller
 {
     use SchoolSession;
 
-    public function __construct(private StudentIdentifierService $studentIdentifierService)
-    {
+    protected $schoolSessionRepository;
+
+    public function __construct(
+        private StudentIdentifierService $studentIdentifierService,
+        SchoolSessionInterface $schoolSessionRepository
+    ) {
+        $this->schoolSessionRepository = $schoolSessionRepository;
     }
 
     public function edit()
