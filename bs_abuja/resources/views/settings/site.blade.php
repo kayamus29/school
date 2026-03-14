@@ -34,6 +34,18 @@
                                     </div>
 
                                     <div class="mb-3">
+                                        <label for="student_identifier_format" class="form-label">Student ID Format</label>
+                                        <input type="text" class="form-control" id="student_identifier_format"
+                                            name="student_identifier_format"
+                                            value="{{ old('student_identifier_format', $setting->student_identifier_format ?? 'STU/{year}/xxx') }}"
+                                            placeholder="BS/Abuja/{year}/xxx" required>
+                                        <div class="form-text">
+                                            Use <code>{year}</code> for the session year and <code>xxx</code> for the running number.
+                                            Example preview: <strong>{{ $studentIdentifierPreview }}</strong>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
                                         <label for="primary_color" class="form-label">Primary Color</label>
                                         <input type="color" class="form-control form-control-color" id="primary_color"
                                             name="primary_color" value="{{ old('primary_color', $setting->primary_color) }}"

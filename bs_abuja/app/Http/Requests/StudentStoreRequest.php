@@ -50,9 +50,9 @@ class StudentStoreRequest extends FormRequest
             // Academic information
             'class_id' => 'required',
             'section_id' => 'required',
-            'board_reg_no' => 'string',
+            'board_reg_no' => 'nullable|string',
             'session_id' => 'required',
-            'id_card_number' => 'required',
+            'id_card_number' => 'nullable|string',
         ];
     }
 }

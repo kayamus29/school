@@ -17,6 +17,7 @@ use App\Models\AssignedTeacher;
 use App\Models\Course;
 use App\Models\Section;
 use App\Models\StudentCourseExclusion;
+use App\Services\StudentIdentifierService;
 use Illuminate\Support\Facades\Auth;
 
 use App\Interfaces\WalletServiceInterface;
@@ -31,6 +32,7 @@ class UserController extends Controller
     protected $promotionRepository;
     protected $studentParentInfoRepository;
     protected $walletService;
+    protected $studentIdentifierService;
 
     public function __construct(
         UserInterface $userRepository,
@@ -39,7 +41,8 @@ class UserController extends Controller
         SectionInterface $schoolSectionRepository,
         PromotionRepository $promotionRepository,
         StudentParentInfoRepository $studentParentInfoRepository,
-        WalletServiceInterface $walletService
+        WalletServiceInterface $walletService,
+        StudentIdentifierService $studentIdentifierService
     ) {
         $this->middleware(['can:view-student-list']);
         $this->middleware(['role:Admin'])->only(['showExportForm', 'exportStudents']);
@@ -51,6 +54,7 @@ class UserController extends Controller
         $this->promotionRepository = $promotionRepository;
         $this->studentParentInfoRepository = $studentParentInfoRepository;
         $this->walletService = $walletService;
+        $this->studentIdentifierService = $studentIdentifierService;
     }
 
     /**
@@ -294,6 +298,8 @@ class UserController extends Controller
         $data = [
             'current_school_session_id' => $current_school_session_id,
             'school_classes' => $school_classes,
+            'student_identifier_preview' => $this->studentIdentifierService->previewForSession($current_school_session_id),
+            'student_identifier_format' => $this->studentIdentifierService->getConfiguredFormat(),
         ];
 
         return view('students.add', $data);
@@ -308,7 +314,12 @@ class UserController extends Controller
     public function storeStudent(StudentStoreRequest $request)
     {
         try {
-            $this->userRepository->createStudent($request->validated());
+            $validated = $request->validated();
+            $generatedIdentifier = $this->studentIdentifierService->generateForSession((int) $validated['session_id']);
+            $validated['id_card_number'] = $generatedIdentifier;
+            $validated['board_reg_no'] = $generatedIdentifier;
+
+            $this->userRepository->createStudent($validated);
 
             return back()->with('status', 'Student creation was successful!');
         } catch (\Exception $e) {

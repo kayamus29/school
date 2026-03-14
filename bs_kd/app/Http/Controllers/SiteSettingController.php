@@ -3,15 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\SiteSetting;
+use App\Traits\SchoolSession;
+use App\Services\StudentIdentifierService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 
 class SiteSettingController extends Controller
 {
-    public function __construct()
+    use SchoolSession;
+
+    public function __construct(private StudentIdentifierService $studentIdentifierService)
     {
-        // 
     }
 
     public function edit()
@@ -24,11 +27,17 @@ class SiteSettingController extends Controller
         if (!$setting) {
             $setting = SiteSetting::create([
                 'school_name' => config('app.name', 'Auracle Technologies'),
+                'student_identifier_format' => 'STU/{year}/xxx',
                 'primary_color' => '#3490dc',
                 'secondary_color' => '#ffffff',
             ]);
         }
-        return view('settings.site', compact('setting'));
+        $currentSessionId = $this->getSchoolCurrentSession();
+
+        return view('settings.site', [
+            'setting' => $setting,
+            'studentIdentifierPreview' => $this->studentIdentifierService->previewForSession($currentSessionId),
+        ]);
     }
 
     public function update(Request $request)
@@ -39,6 +48,7 @@ class SiteSettingController extends Controller
 
         $request->validate([
             'school_name' => 'required|string|max:255',
+            'student_identifier_format' => 'required|string|max:255',
             'school_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'login_background' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'primary_color' => 'required|string|size:7', // Hex code
@@ -65,6 +75,7 @@ class SiteSettingController extends Controller
         }
 
         $setting->school_name = $request->school_name;
+        $setting->student_identifier_format = $request->student_identifier_format;
         $setting->primary_color = $request->primary_color;
         $setting->secondary_color = $request->secondary_color;
         $setting->office_lat = $request->office_lat;

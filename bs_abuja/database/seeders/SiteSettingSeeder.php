@@ -18,6 +18,7 @@ class SiteSettingSeeder extends Seeder
             ['id' => 1],
             [
                 'school_name' => 'Auracle Technologies',
+                'student_identifier_format' => 'STU/{year}/xxx',
                 'primary_color' => '#3490dc',
                 'secondary_color' => '#ffffff',
                 'geo_range' => 500,

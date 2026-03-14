@@ -11,6 +11,7 @@ class SiteSetting extends Model
 
     protected $fillable = [
         'school_name',
+        'student_identifier_format',
         'school_logo_path',
         'login_background_path',
         'primary_color',

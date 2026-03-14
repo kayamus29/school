@@ -139,9 +139,12 @@
                                     <div class="col-md-5">
                                         <label for="inputIdCardNumber" class="form-label">Id Card Number<sup><i
                                                     class="bi bi-asterisk text-primary"></i></sup></label>
-                                        <input type="text" class="form-control" id="inputIdCardNumber" name="id_card_number"
-                                            placeholder="e.g. 2021-03-01-02-01 (Year Semester Class Section Roll)" required
-                                            value="{{old('id_card_number')}}">
+                                        <input type="text" class="form-control" id="inputIdCardNumber"
+                                            value="{{ $student_identifier_preview }}" readonly>
+                                        <div class="form-text">
+                                            Auto-generated from site settings format:
+                                            <code>{{ $student_identifier_format }}</code>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="row mt-4 g-3">
@@ -215,8 +218,8 @@
                                         <label for="inputBoardRegistrationNumber" class="form-label">Board registration
                                             No.</label>
                                         <input type="text" class="form-control" id="inputBoardRegistrationNumber"
-                                            name="board_reg_no" placeholder="Registration No."
-                                            value="{{old('board_reg_no')}}">
+                                            value="{{ $student_identifier_preview }}" readonly>
+                                        <div class="form-text">Generated automatically to match the student ID card number.</div>
                                     </div>
                                     <input type="hidden" name="session_id" value="{{$current_school_session_id}}">
                                 </div>
