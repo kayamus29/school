@@ -32,9 +32,21 @@ class PromotionRepository
     public function update($request, $student_id)
     {
         try {
-            Promotion::where('student_id', $student_id)->update([
+            $query = Promotion::where('student_id', $student_id);
+
+            if (!empty($request['session_id'])) {
+                $query->where('session_id', $request['session_id']);
+            }
+
+            $payload = [
                 'id_card_number' => $request['id_card_number'],
-            ]);
+            ];
+
+            if (array_key_exists('section_id', $request) && !empty($request['section_id'])) {
+                $payload['section_id'] = $request['section_id'];
+            }
+
+            $query->update($payload);
         } catch (\Exception $e) {
             throw new \Exception('Failed to update Student. ' . $e->getMessage());
         }

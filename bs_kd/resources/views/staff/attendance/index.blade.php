@@ -9,6 +9,12 @@
                     <h1 class="h3 mb-0 text-gray-800">Staff Attendance</h1>
                 </div>
 
+                @if(!$attendanceReady)
+                    <div class="alert alert-warning">
+                        Staff check-in is not ready yet. Admin needs to configure office latitude, longitude, and geofencing radius in site settings.
+                    </div>
+                @endif
+
                 <div class="row mb-4">
                     <div class="col-md-4">
                         <div class="card shadow h-100 py-2 border-left-{{ $todayAttendance ? ($todayAttendance->check_out_at ? 'secondary' : 'success') : 'primary' }}">
@@ -32,11 +38,11 @@
                                 </div>
                                 <div class="mt-3">
                                     @if(!$todayAttendance)
-                                        <button id="btn-checkin" class="btn btn-primary w-100">
+                                        <button id="btn-checkin" class="btn btn-primary w-100" {{ !$attendanceReady ? 'disabled' : '' }}>
                                             <i class="bi bi-geo-alt"></i> Check In Now
                                         </button>
                                     @elseif(!$todayAttendance->check_out_at)
-                                        <button id="btn-checkout" class="btn btn-warning w-100">
+                                        <button id="btn-checkout" class="btn btn-warning w-100" {{ !$attendanceReady ? 'disabled' : '' }}>
                                             <i class="bi bi-door-open"></i> Check Out
                                         </button>
                                     @else
@@ -104,6 +110,13 @@
         const btnCheckout = document.getElementById('btn-checkout');
 
         function handleAttendance(action) {
+            const attendanceReady = @json($attendanceReady);
+
+            if (!attendanceReady) {
+                alert('Staff attendance is not configured yet. Ask admin to set office latitude, longitude, and geofencing radius.');
+                return;
+            }
+
             if (!navigator.geolocation) {
                 alert("Geolocation is not supported by your browser.");
                 return;
@@ -126,17 +139,29 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Accept': 'application/json'
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'X-Requested-With': 'XMLHttpRequest'
                         },
                         body: JSON.stringify(data)
                     })
-                    .then(response => response.json())
+                    .then(async (response) => {
+                        const result = await response.json().catch(() => ({
+                            success: false,
+                            message: 'Unexpected server response.'
+                        }));
+
+                        return {
+                            ok: response.ok,
+                            result
+                        };
+                    })
                     .then(result => {
-                        if (result.success) {
-                            alert(result.message);
+                        if (result.ok && result.result.success) {
+                            alert(result.result.message);
                             location.reload();
                         } else {
-                            alert(result.message);
+                            alert(result.result.message || 'Unable to process attendance request.');
                             btn.innerHTML = originalHtml;
                             btn.disabled = false;
                         }
@@ -161,4 +186,3 @@
         btnCheckout?.addEventListener('click', () => handleAttendance('checkout'));
     </script>
 @endsection
-

@@ -95,6 +95,7 @@
                                                     <li>Rolling over a new session copies structure only. Student placement still happens through promotion.</li>
                                                     <li>Results pages now include attendance summary, and class teachers can save affective scores.</li>
                                                     <li>Lesson plans support typed content and file uploads.</li>
+                                                    <li>Communication now includes guardian email/SMS sending, preview, delivery history, and inbox sync for admin after IMAP is configured.</li>
                                                 </ul>
                                             </div>
                                         </div>
@@ -155,7 +156,26 @@
                                                     <li>Add student accounts only once.</li>
                                                     <li>Use promotion to place existing students into a new session.</li>
                                                     <li>Student subject removal is handled from the student profile when a class/section teacher needs an exception.</li>
+                                                    <li>Admin can now change a student's section from the edit student page.</li>
                                                     <li>Use Browse Session carefully when checking prior-year data.</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>Communication and inbox</h6>
+                                                <ul class="mb-0">
+                                                    <li>Use Communication for bulk guardian email/SMS or single guardian email/SMS.</li>
+                                                    <li>Preview the qualified recipient list before sending.</li>
+                                                    <li>Bulk SMS and IMAP inbox settings are managed in Site Settings.</li>
+                                                    <li>Inbox sync requires PHP IMAP enabled on the server before admin can read incoming emails inside the app.</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>Staff attendance setup</h6>
+                                                <ul class="mb-0">
+                                                    <li>Set office latitude, longitude, geofence radius, and late threshold in Site Settings.</li>
+                                                    <li>Use the location button in Site Settings to capture the office coordinates accurately.</li>
+                                                    <li>If location settings are missing, staff check-in will remain disabled.</li>
+                                                    <li>Confirm staff browsers allow GPS access before testing check-in.</li>
                                                 </ul>
                                             </div>
                                             <div class="col-md-6">
@@ -163,6 +183,7 @@
                                                 <ul class="mb-0">
                                                     <li>After pulling code on live, visit `/deploy/migrate` with the configured key or while logged in as admin.</li>
                                                     <li>The migration route runs `php artisan migrate --force`.</li>
+                                                    <li>This release needs migrations for communication history, IMAP inbox storage, and settings fields.</li>
                                                     <li>Remove or rotate `DEPLOY_MIGRATE_KEY` after deployment.</li>
                                                 </ul>
                                             </div>
@@ -198,6 +219,16 @@
                                                     <li>Save affective scores for punctuality, neatness, politeness, honesty, performance, attentiveness, perseverance, speaking, and writing.</li>
                                                     <li>If needed, override a student's attendance summary for that term.</li>
                                                     <li>Use the student profile page to remove a subject from a specific student where the class/section needs that exception.</li>
+                                                    <li>Class teachers with class-wide leadership can now move a student to another section inside the same class.</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>Guardian communication</h6>
+                                                <ul class="mb-0">
+                                                    <li>Teachers can send single email or SMS to a student's guardian from the Communication module.</li>
+                                                    <li>The system validates guardian email and phone before adding the recipient.</li>
+                                                    <li>Nigerian phone numbers starting with `0` are normalized to `+234` automatically.</li>
+                                                    <li>Sent items appear in communication history.</li>
                                                 </ul>
                                             </div>
                                             <div class="col-md-6">

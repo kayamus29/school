@@ -109,6 +109,82 @@
                                         </div>
                                     </div>
 
+                                    <h5 class="mt-4 mb-3 border-bottom pb-2">Bulk SMS Integration</h5>
+                                    <div class="mb-3">
+                                        <label for="bulksms_base_url" class="form-label">Bulk SMS Base URL</label>
+                                        <input type="url" class="form-control" id="bulksms_base_url"
+                                            name="bulksms_base_url"
+                                            value="{{ old('bulksms_base_url', $setting->bulksms_base_url ?? 'https://www.bulksmsnigeria.com/api') }}"
+                                            placeholder="https://www.bulksmsnigeria.com/api">
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="bulksms_api_token" class="form-label">Bulk SMS API Token</label>
+                                            <input type="text" class="form-control" id="bulksms_api_token"
+                                                name="bulksms_api_token"
+                                                value="{{ old('bulksms_api_token', $setting->bulksms_api_token) }}"
+                                                placeholder="Bearer token from provider">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="bulksms_sender_id" class="form-label">Bulk SMS Sender ID</label>
+                                            <input type="text" class="form-control" id="bulksms_sender_id"
+                                                name="bulksms_sender_id"
+                                                value="{{ old('bulksms_sender_id', $setting->bulksms_sender_id) }}"
+                                                placeholder="Sender ID">
+                                        </div>
+                                    </div>
+
+                                    <h5 class="mt-4 mb-3 border-bottom pb-2">IMAP Inbox Integration</h5>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="imap_host" class="form-label">IMAP Host</label>
+                                            <input type="text" class="form-control" id="imap_host" name="imap_host"
+                                                value="{{ old('imap_host', $setting->imap_host) }}"
+                                                placeholder="mail.yourschool.com">
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label for="imap_port" class="form-label">IMAP Port</label>
+                                            <input type="number" class="form-control" id="imap_port" name="imap_port"
+                                                value="{{ old('imap_port', $setting->imap_port ?? 993) }}"
+                                                placeholder="993">
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label for="imap_encryption" class="form-label">Encryption</label>
+                                            <select class="form-select" id="imap_encryption" name="imap_encryption">
+                                                <option value="ssl" {{ old('imap_encryption', $setting->imap_encryption ?? 'ssl') === 'ssl' ? 'selected' : '' }}>SSL</option>
+                                                <option value="tls" {{ old('imap_encryption', $setting->imap_encryption) === 'tls' ? 'selected' : '' }}>TLS</option>
+                                                <option value="notls" {{ old('imap_encryption', $setting->imap_encryption) === 'notls' ? 'selected' : '' }}>No TLS</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="imap_username" class="form-label">IMAP Username</label>
+                                            <input type="text" class="form-control" id="imap_username" name="imap_username"
+                                                value="{{ old('imap_username', $setting->imap_username) }}"
+                                                placeholder="inbox@school.com">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="imap_password" class="form-label">IMAP Password</label>
+                                            <input type="password" class="form-control" id="imap_password" name="imap_password"
+                                                value="{{ old('imap_password', $setting->imap_password) }}"
+                                                placeholder="Mailbox password">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="imap_mailbox" class="form-label">Mailbox Folder</label>
+                                            <input type="text" class="form-control" id="imap_mailbox" name="imap_mailbox"
+                                                value="{{ old('imap_mailbox', $setting->imap_mailbox ?? 'INBOX') }}"
+                                                placeholder="INBOX">
+                                        </div>
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" value="1" id="imap_validate_cert"
+                                            name="imap_validate_cert" {{ old('imap_validate_cert', $setting->imap_validate_cert ?? true) ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="imap_validate_cert">
+                                            Validate IMAP certificate
+                                        </label>
+                                    </div>
+
                                     <div class="mt-4 text-end">
                                         <button type="submit" class="btn btn-primary">Save Settings</button>
                                     </div>

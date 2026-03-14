@@ -15,6 +15,7 @@ use App\Interfaces\SchoolSessionInterface;
 use App\Repositories\StudentParentInfoRepository;
 use App\Models\AssignedTeacher;
 use App\Models\Course;
+use App\Models\Section;
 use App\Models\StudentCourseExclusion;
 use Illuminate\Support\Facades\Auth;
 
@@ -322,11 +323,22 @@ class UserController extends Controller
         $current_school_session_id = $this->getSchoolCurrentSession();
         $promotion_info = $this->promotionRepository->getPromotionInfoById($current_school_session_id, $student_id);
         $this->authorizeStudentEditing($promotion_info?->class_id, $promotion_info?->section_id);
+        $sections = collect();
+
+        if ($promotion_info?->class_id) {
+            $sections = Section::query()
+                ->where('session_id', $current_school_session_id)
+                ->where('class_id', $promotion_info->class_id)
+                ->orderBy('section_name')
+                ->get();
+        }
 
         $data = [
             'student' => $student,
             'parent_info' => $parent_info,
             'promotion_info' => $promotion_info,
+            'sections' => $sections,
+            'canChangeSection' => $this->canChangeStudentSection($promotion_info?->class_id),
         ];
         return view('students.edit', $data);
     }
@@ -338,8 +350,53 @@ class UserController extends Controller
             $current_school_session_id = $this->getSchoolCurrentSession();
             $promotion_info = $this->promotionRepository->getPromotionInfoById($current_school_session_id, $studentId);
             $this->authorizeStudentEditing($promotion_info?->class_id, $promotion_info?->section_id);
+            $canChangeSection = $this->canChangeStudentSection($promotion_info?->class_id);
 
-            $this->userRepository->updateStudent($request->toArray());
+            $validated = $request->validate([
+                'first_name' => 'required|string',
+                'last_name' => 'required|string',
+                'email' => 'required|string|email|max:255|unique:users,email,' . $studentId,
+                'gender' => 'required|string',
+                'nationality' => 'required|string',
+                'phone' => 'required|string',
+                'address' => 'required|string',
+                'address2' => 'nullable|string',
+                'city' => 'required|string',
+                'zip' => 'required|string',
+                'birthday' => 'required|date',
+                'religion' => 'required|string',
+                'blood_type' => 'required|string',
+                'father_name' => 'required|string',
+                'father_phone' => 'required|string',
+                'mother_name' => 'required|string',
+                'mother_phone' => 'required|string',
+                'guardian_email' => 'nullable|email|max:255',
+                'guardian_phone' => 'nullable|string|max:255',
+                'parent_address' => 'required|string',
+                'id_card_number' => 'required|string',
+                'section_id' => 'nullable|integer|exists:sections,id',
+            ]);
+
+            $validated['student_id'] = $studentId;
+            $validated['session_id'] = $current_school_session_id;
+
+            if ($canChangeSection && $request->filled('section_id')) {
+                $targetSection = Section::query()
+                    ->where('id', $request->input('section_id'))
+                    ->where('session_id', $current_school_session_id)
+                    ->where('class_id', $promotion_info?->class_id)
+                    ->first();
+
+                if (!$targetSection) {
+                    return back()->withInput()->withError('The selected section is invalid for this class.');
+                }
+
+                $validated['section_id'] = (int) $targetSection->id;
+            } else {
+                $validated['section_id'] = $promotion_info?->section_id;
+            }
+
+            $this->userRepository->updateStudent($validated);
 
             return back()->with('status', 'Student update was successful!');
         } catch (\Exception $e) {
@@ -371,6 +428,27 @@ class UserController extends Controller
         if (!$isAssigned) {
             abort(403, 'Teachers do not have access to edit this student.');
         }
+    }
+
+    private function canChangeStudentSection(?int $classId): bool
+    {
+        $user = Auth::user();
+
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
+        if (!$user->hasRole('Teacher') || !$classId) {
+            return false;
+        }
+
+        return AssignedTeacher::query()
+            ->where('teacher_id', $user->id)
+            ->where('session_id', $this->getSchoolCurrentSession())
+            ->where('class_id', $classId)
+            ->whereNull('section_id')
+            ->sectionLeadership()
+            ->exists();
     }
 
     public function editTeacher($teacher_id)

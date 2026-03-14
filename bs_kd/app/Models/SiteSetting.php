@@ -19,5 +19,15 @@ class SiteSetting extends Model
         'office_long',
         'geo_range',
         'late_time',
+        'bulksms_base_url',
+        'bulksms_api_token',
+        'bulksms_sender_id',
+        'imap_host',
+        'imap_port',
+        'imap_username',
+        'imap_password',
+        'imap_encryption',
+        'imap_validate_cert',
+        'imap_mailbox',
     ];
 }

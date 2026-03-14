@@ -61,6 +61,16 @@ class AppServiceProvider extends ServiceProvider
                     'office_long' => 3.3792,
                     'geo_range' => 500,
                     'late_time' => '08:00',
+                    'bulksms_base_url' => config('services.bulksms.base_url', 'https://www.bulksmsnigeria.com/api'),
+                    'bulksms_api_token' => null,
+                    'bulksms_sender_id' => null,
+                    'imap_host' => null,
+                    'imap_port' => 993,
+                    'imap_username' => null,
+                    'imap_password' => null,
+                    'imap_encryption' => 'ssl',
+                    'imap_validate_cert' => true,
+                    'imap_mailbox' => 'INBOX',
                 ];
             }
 

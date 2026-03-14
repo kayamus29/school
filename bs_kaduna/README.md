@@ -147,6 +147,49 @@ If you are not using Docker:
    - **Email**: `admin@ut.com`
    - **Password**: `password`
 
+## Post-Update Migration Checklist
+
+If you pull the latest code from this branch, you must run migrations before using the new modules.
+
+```bash
+php artisan migrate --force
+```
+
+This update adds database changes for:
+- communication history and per-recipient delivery logs
+- Bulk SMS settings
+- IMAP inbox settings
+- inbound email storage for synced mailbox messages
+
+After migration, admin should also review **Site Settings** and configure:
+- office latitude, office longitude, and geofencing radius for staff attendance
+- Bulk SMS API base URL, token, and sender ID
+- IMAP mailbox host, port, username, password, encryption, and folder
+
+## Operational Notes For New Features
+
+### Communication Module
+- Admin can send both bulk and single guardian email/SMS from the Communication module.
+- Teachers can send single guardian email/SMS only to students they lead.
+- Guardian email addresses are validated before being added to the qualified list.
+- Guardian phone numbers are normalized to Nigerian format. Example: `08061253374` becomes `+2348061253374`.
+- Invalid or incomplete guardian contact details are excluded from sending and shown in preview.
+
+### Inbox / IMAP
+- The inbox inside the Communication module requires the PHP IMAP extension on the server.
+- SMTP alone is not enough for inbox sync. Outgoing email replies will work with SMTP, but inbox sync needs IMAP enabled.
+- After IMAP is enabled and configured in Site Settings, admin can sync mailbox messages, open them, and reply from inside the app.
+
+### Student Section Change
+- Admin can change a student’s section from the student edit screen.
+- Teachers can change section only when they are the class-wide section leader or class supervisor for that class.
+- The new section must belong to the same class and current session.
+
+### Staff Attendance / Geolocation
+- Staff check-in now depends on Site Settings having valid office latitude, longitude, and geofencing radius.
+- Browsers must allow location access.
+- If these settings are missing, the check-in button is disabled and the page explains what needs to be configured.
+
 ## 💻 Moving to another Computer
 If you are moving this project via GitHub, just follow the **Manual Setup** or **Docker Quick Start** above.
 If you need to transfer your existing **data** (students, marks):
@@ -456,5 +499,4 @@ Students can view and download assignments of their courses just like their teac
 
 ### 6. View routine
 Students can view their class and section routine just like their admin/teachers.
-
 

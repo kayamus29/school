@@ -29,6 +29,7 @@ use App\Http\Controllers\StaffAttendanceController;
 use App\Http\Controllers\TutorialController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AttendanceSummaryOverrideController;
+use App\Http\Controllers\CommunicationController;
 use App\Http\Controllers\DeploymentController;
 use App\Http\Controllers\EndTermUpdateController;
 use App\Http\Controllers\LessonPlanController;
@@ -257,6 +258,19 @@ Route::middleware(['auth'])->group(function () {
     // Site Settings (Whitelabeling)
     Route::get('/settings/site', [SiteSettingController::class, 'edit'])->name('settings.site.edit');
     Route::post('/settings/site', [SiteSettingController::class, 'update'])->name('settings.site.update');
+
+    // Communication
+    Route::get('/communications', [CommunicationController::class, 'index'])->name('communications.index');
+    Route::post('/communications/preview', [CommunicationController::class, 'preview'])->name('communications.preview');
+    Route::post('/communications/send', [CommunicationController::class, 'send'])->name('communications.send');
+    Route::get('/communications/inbox', [CommunicationController::class, 'inbox'])->name('communications.inbox');
+    Route::post('/communications/inbox/sync', [CommunicationController::class, 'syncInbox'])->name('communications.inbox.sync');
+    Route::get('/communications/inbox/{inboundEmail}', [CommunicationController::class, 'showInbound'])->name('communications.inbox.show');
+    Route::get('/communications/inbox/{inboundEmail}/reply', [CommunicationController::class, 'replyInboundForm'])->name('communications.inbox.reply.form');
+    Route::post('/communications/inbox/{inboundEmail}/reply', [CommunicationController::class, 'replyInboundSend'])->name('communications.inbox.reply.send');
+    Route::get('/communications/{communication}', [CommunicationController::class, 'show'])->whereNumber('communication')->name('communications.show');
+    Route::get('/communications/{communication}/reply/{recipient}', [CommunicationController::class, 'replyForm'])->whereNumber('communication')->whereNumber('recipient')->name('communications.reply.form');
+    Route::post('/communications/{communication}/reply/{recipient}', [CommunicationController::class, 'replySend'])->whereNumber('communication')->whereNumber('recipient')->name('communications.reply.send');
 
     // Calendar events
     Route::get('calendar-event', [EventController::class, 'index'])->name('events.show');

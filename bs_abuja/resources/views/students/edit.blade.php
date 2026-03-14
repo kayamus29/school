@@ -143,6 +143,20 @@
                                             placeholder="e.g. 2021-03-01-02-01 (Year Semester Class Section Roll)" required
                                             value="{{$promotion_info->id_card_number ?? ''}}">
                                     </div>
+                                    <div class="col-3">
+                                        <label for="inputAssignToSection" class="form-label">Section</label>
+                                        <select class="form-select" id="inputAssignToSection" name="section_id" {{ $canChangeSection ? '' : 'disabled' }}>
+                                            @foreach($sections as $section)
+                                                <option value="{{ $section->id }}" {{ (int) old('section_id', $promotion_info->section_id ?? 0) === (int) $section->id ? 'selected' : '' }}>
+                                                    {{ $section->section_name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @if(!$canChangeSection)
+                                            <div class="form-text">Only admin and the class teacher can change a student's section.</div>
+                                            <input type="hidden" name="section_id" value="{{ old('section_id', $promotion_info->section_id ?? '') }}">
+                                        @endif
+                                    </div>
                                 </div>
                                 <div class="row mt-4 g-3">
                                     <h6>Parents' Information</h6>

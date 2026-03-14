@@ -338,6 +338,13 @@
                     </ul>
                 </li>
             @endif
+            @if (Auth::user()->hasAnyRole(['Admin', 'Teacher']))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->is('communications*') ? 'active' : '' }}"
+                        href="{{ route('communications.index') }}"><i class="bi bi-envelope-paper"></i> <span
+                            class="ms-1 d-inline d-sm-none d-md-none d-xl-inline">Communication</span></a>
+                </li>
+            @endif
             @if (Auth::user()->hasRole('Admin'))
                 <li class="nav-item">
                     <a type="button" href="#staff-submenu" data-bs-toggle="collapse"
